@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_inspector_egui::InspectorOptions;
 
 use crate::{
     animation::{AnimationIndices, AnimationTimer},
@@ -8,7 +9,7 @@ use crate::{
 
 pub struct PlayerPlugin;
 
-#[derive(Component)]
+#[derive(Component, InspectorOptions, Reflect)]
 pub struct Player {
     pub speed: f32,
 }

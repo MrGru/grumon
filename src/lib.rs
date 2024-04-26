@@ -5,11 +5,13 @@ use bevy_asset_loader::loading_state::{
     config::ConfigureLoadingState, LoadingState, LoadingStateAppExt,
 };
 use camera::CameraPlugin;
+use debug::DebugPlugin;
 use player::PlayerPlugin;
 
 mod animation;
 mod asset;
 mod camera;
+mod debug;
 mod player;
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
@@ -32,5 +34,6 @@ impl Plugin for GamePlugin {
         app.add_plugins(CameraPlugin);
         app.add_plugins(PlayerPlugin);
         app.add_plugins(AnimationPlugin);
+        app.add_plugins(DebugPlugin);
     }
 }

@@ -1,4 +1,4 @@
-use bevy::{log::LogPlugin, prelude::*};
+use bevy::prelude::*;
 use grumon::GamePlugin;
 
 pub const CLEAR: Color = Color::rgb(0.1, 0.1, 0.1);
