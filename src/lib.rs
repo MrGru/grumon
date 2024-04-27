@@ -4,15 +4,22 @@ use bevy::prelude::*;
 use bevy_asset_loader::loading_state::{
     config::ConfigureLoadingState, LoadingState, LoadingStateAppExt,
 };
+use bevy_ecs_ldtk::{LdtkPlugin, LevelSelection};
 use camera::CameraPlugin;
 use debug::DebugPlugin;
+use level::LevelPlugin;
 use player::PlayerPlugin;
 
 mod animation;
 mod asset;
 mod camera;
 mod debug;
+mod level;
 mod player;
+
+pub const CLEAR: Color = Color::rgb(0.1, 0.1, 0.1);
+pub const GAME_WIDTH: f32 = 960.0;
+pub const GAME_HEIGHT: f32 = 640.0;
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
 enum GameState {
@@ -32,8 +39,11 @@ impl Plugin for GamePlugin {
                 .load_collection::<GameAssets>(),
         );
         app.add_plugins(CameraPlugin);
-        app.add_plugins(PlayerPlugin);
+        app.insert_resource(LevelSelection::index(0));
         app.add_plugins(AnimationPlugin);
         app.add_plugins(DebugPlugin);
+        app.add_plugins(LdtkPlugin);
+        app.add_plugins(LevelPlugin);
+        app.add_plugins(PlayerPlugin);
     }
 }

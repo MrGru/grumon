@@ -28,7 +28,7 @@ fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
         .spawn((
             SpriteBundle {
                 texture: game_assets.player_texture.clone(),
-                transform: Transform::from_scale(Vec3::splat(1.0)),
+                transform: Transform::from_xyz(100.0, 100.0, 10.0),
                 ..SpriteBundle::default()
             },
             TextureAtlas {

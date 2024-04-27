@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::GameState;
+use crate::{GameState, GAME_HEIGHT, GAME_WIDTH};
 
 pub struct CameraPlugin;
 
@@ -12,5 +12,9 @@ impl Plugin for CameraPlugin {
 
 fn spawn_camera(mut commands: Commands) {
     info!("add camera plugins");
-    commands.spawn(Camera2dBundle::default());
+    let mut camera = Camera2dBundle::default();
+    camera.transform.translation.x += GAME_WIDTH / 2.0;
+    camera.transform.translation.y += GAME_HEIGHT / 2.0;
+
+    commands.spawn(camera);
 }

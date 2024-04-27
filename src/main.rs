@@ -1,21 +1,22 @@
 use bevy::{prelude::*, window::WindowResolution};
-use grumon::GamePlugin;
-
-pub const CLEAR: Color = Color::rgb(0.1, 0.1, 0.1);
-pub const RESOLUTION: f32 = 16.0 / 9.0;
+use grumon::{GamePlugin, CLEAR, GAME_HEIGHT, GAME_WIDTH};
 
 fn main() {
     App::new()
         .insert_resource(ClearColor(CLEAR))
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "Grumon".to_string(),
-                resizable: false,
-                resolution: WindowResolution::new(960.0, 640.0),
-                ..default()
-            }),
-            ..Default::default()
-        }))
+        .add_plugins(
+            DefaultPlugins
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        title: "Grumon".to_string(),
+                        resizable: false,
+                        resolution: WindowResolution::new(GAME_WIDTH, GAME_HEIGHT),
+                        ..default()
+                    }),
+                    ..Default::default()
+                })
+                .set(ImagePlugin::default_nearest()),
+        )
         .add_plugins(GamePlugin)
         .run();
 }
