@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, window::WindowResolution};
 use grumon::GamePlugin;
 
 pub const CLEAR: Color = Color::rgb(0.1, 0.1, 0.1);
@@ -11,6 +11,7 @@ fn main() {
             primary_window: Some(Window {
                 title: "Grumon".to_string(),
                 resizable: false,
+                resolution: WindowResolution::new(960.0, 640.0),
                 ..default()
             }),
             ..Default::default()
