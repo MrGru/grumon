@@ -26,7 +26,7 @@ pub fn animated_sprite(
     for (indices, mut timer, mut atlas) in &mut query {
         timer.tick(time.delta());
         if timer.just_finished() {
-            atlas.index = if atlas.index == indices.last {
+            atlas.index = if atlas.index >= indices.last || atlas.index < indices.first {
                 indices.first
             } else {
                 atlas.index + 1

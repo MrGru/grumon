@@ -36,29 +36,37 @@ fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
                 index: animation_indices.first,
             },
             animation_indices,
-            AnimationTimer(Timer::from_seconds(0.2, TimerMode::Repeating)),
+            AnimationTimer(Timer::from_seconds(0.15, TimerMode::Repeating)),
         ))
         .insert(Name::new("Player"))
-        .insert(Player { speed: 150.0 });
+        .insert(Player { speed: 120.0 });
 }
 
 fn player_movement(
-    mut player_query: Query<(&Player, &mut Transform)>,
+    mut player_query: Query<(&Player, &mut Transform, &mut AnimationIndices)>,
     keyboard: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
 ) {
-    let (player, mut transform) = player_query.single_mut();
+    let (player, mut transform, mut animation_indices) = player_query.single_mut();
 
     if keyboard.pressed(KeyCode::KeyW) {
         transform.translation.y += player.speed * time.delta_seconds();
+        animation_indices.first = 12;
+        animation_indices.last = 15;
     }
     if keyboard.pressed(KeyCode::KeyS) {
         transform.translation.y -= player.speed * time.delta_seconds();
+        animation_indices.first = 0;
+        animation_indices.last = 3;
     }
     if keyboard.pressed(KeyCode::KeyA) {
         transform.translation.x -= player.speed * time.delta_seconds();
+        animation_indices.first = 4;
+        animation_indices.last = 7;
     }
     if keyboard.pressed(KeyCode::KeyD) {
         transform.translation.x += player.speed * time.delta_seconds();
+        animation_indices.first = 8;
+        animation_indices.last = 11;
     }
 }
