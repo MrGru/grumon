@@ -9,13 +9,16 @@ use camera::CameraPlugin;
 use debug::DebugPlugin;
 use level::LevelPlugin;
 use player::PlayerPlugin;
+use systems::z_order_system::y_sort;
 
 mod animation;
 mod asset;
 mod camera;
+mod components;
 mod debug;
 mod level;
 mod player;
+mod systems;
 
 pub const CLEAR: Color = Color::rgb(0.1, 0.1, 0.1);
 pub const GAME_WIDTH: f32 = 960.0;
@@ -38,6 +41,7 @@ impl Plugin for GamePlugin {
                 .continue_to_state(GameState::Playing)
                 .load_collection::<GameAssets>(),
         );
+        app.add_systems(Update, y_sort);
         app.add_plugins(CameraPlugin);
         app.insert_resource(LevelSelection::index(0));
         app.add_plugins(AnimationPlugin);
