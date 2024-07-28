@@ -23,7 +23,7 @@ pub struct Tree;
 pub struct TreeBundle {
     tree: Tree,
     #[sprite_sheet_bundle(no_grid)]
-    sprite_sheet_bundle: SpriteSheetBundle,
+    sprite_sheet_bundle: LdtkSpriteSheetBundle,
     pub y_sort: YSort,
 }
 
@@ -34,7 +34,7 @@ pub struct House;
 pub struct HouseBundle {
     house: House,
     #[sprite_sheet_bundle(no_grid)]
-    sprite_sheet_bundle: SpriteSheetBundle,
+    sprite_sheet_bundle: LdtkSpriteSheetBundle,
     pub y_sort: YSort,
 }
 
@@ -52,9 +52,11 @@ fn spawn_player(
     game_assets: Res<GameAssets>,
     new_entity_instances: Query<(Entity, &EntityInstance, &Transform), Added<EntityInstance>>,
 ) {
+    println!("player containes");
     for (entity, entity_instance, transform) in new_entity_instances.iter() {
         if entity_instance.identifier == "Player".to_string() {
             let animation_indices = AnimationIndices { first: 0, last: 3 };
+            println!("play create by app");
 
             commands
                 .entity(entity)

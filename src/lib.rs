@@ -8,6 +8,7 @@ use bevy_ecs_ldtk::{LdtkPlugin, LevelSelection};
 use camera::CameraPlugin;
 use debug::DebugPlugin;
 use level::LevelPlugin;
+use main_menu::MainMenuPlugin;
 use player::PlayerPlugin;
 use systems::z_order_system::y_sort;
 
@@ -17,10 +18,11 @@ mod camera;
 mod components;
 mod debug;
 mod level;
+mod main_menu;
 mod player;
 mod systems;
 
-pub const CLEAR: Color = Color::rgb(0.1, 0.1, 0.1);
+pub const CLEAR: Color = Color::srgb(0.1, 0.1, 0.1);
 pub const GAME_WIDTH: f32 = 960.0;
 pub const GAME_HEIGHT: f32 = 640.0;
 
@@ -28,6 +30,7 @@ pub const GAME_HEIGHT: f32 = 640.0;
 enum GameState {
     #[default]
     Loading,
+    Menu,
     Playing,
 }
 
@@ -43,11 +46,12 @@ impl Plugin for GamePlugin {
         );
         app.add_systems(Update, y_sort);
         app.add_plugins(CameraPlugin);
+        app.add_plugins(LdtkPlugin);
         app.insert_resource(LevelSelection::index(0));
+        app.add_plugins(LevelPlugin);
+        // app.add_plugins(MainMenuPlugin);
         app.add_plugins(AnimationPlugin);
         app.add_plugins(DebugPlugin);
-        app.add_plugins(LdtkPlugin);
-        app.add_plugins(LevelPlugin);
         app.add_plugins(PlayerPlugin);
     }
 }
