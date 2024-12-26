@@ -11,7 +11,7 @@ impl Plugin for LevelPlugin {
 
 fn init_level(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(LdtkWorldBundle {
-        ldtk_handle: asset_server.load("world.ldtk"),
+        ldtk_handle: asset_server.load("world.ldtk").into(),
         ..Default::default()
     });
 }

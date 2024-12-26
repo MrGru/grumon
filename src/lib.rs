@@ -49,7 +49,7 @@ impl Plugin for GamePlugin {
         app.add_plugins(LdtkPlugin);
         app.insert_resource(LevelSelection::index(0));
         app.add_plugins(LevelPlugin);
-        // app.add_plugins(MainMenuPlugin);
+        app.add_plugins(MainMenuPlugin);
         app.add_plugins(AnimationPlugin);
         app.add_plugins(DebugPlugin);
         app.add_plugins(PlayerPlugin);

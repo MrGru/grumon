@@ -1,4 +1,7 @@
-use bevy::{color::palettes, prelude::*};
+use bevy::{
+    color::palettes::{self, css::BLUE},
+    prelude::*,
+};
 
 use crate::{
     asset::GameAssets,
@@ -21,15 +24,11 @@ pub fn despawn_main_menu(mut commands: Commands, query: Query<Entity, With<MainM
 pub fn build_main_menu(commands: &mut Commands, game_assets: Res<GameAssets>) -> Entity {
     let main_menu_entity = commands
         .spawn((
-            NodeBundle {
-                style: Style {
-                    width: Val::Percent(100.0),
-                    height: Val::Percent(100.0),
-                    justify_content: JustifyContent::Center,
-                    align_items: AlignItems::Center,
-                    ..default()
-                },
-                background_color: palettes::basic::RED.into(),
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
                 ..default()
             },
             MainMenu {},
@@ -39,30 +38,18 @@ pub fn build_main_menu(commands: &mut Commands, game_assets: Res<GameAssets>) ->
 
             // Play Button
             parent
-                .spawn((
-                    ButtonBundle {
-                        style: BUTTON_STYLE,
-                        background_color: NORMAL_BUTTON_COLOR.into(),
-                        ..default()
-                    },
-                    PlayButton {},
-                ))
+                .spawn((BUTTON_STYLE, PlayButton {}))
                 .with_children(|parent| {
-                    parent.spawn(TextBundle {
-                        text: Text {
-                            sections: vec![TextSection::new(
-                                "Play",
-                                TextStyle {
-                                    font: game_assets.grumon_font.clone(),
-                                    font_size: 32.0,
-                                    color: Color::WHITE,
-                                },
-                            )],
-                            justify: JustifyText::Center,
-                            ..default()
+                    parent.spawn((
+                        Text::new("hello world!"),
+                        TextFont {
+                            // font: font_handle.clone().into(),
+                            font_size: 60.0,
+                            ..Default::default()
                         },
-                        ..default()
-                    });
+                        TextColor(BLUE.into()),
+                        TextLayout::new_with_justify(JustifyText::Center),
+                    ));
                 });
             // Quit Button
         })

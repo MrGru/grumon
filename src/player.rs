@@ -22,8 +22,8 @@ pub struct Tree;
 #[derive(Bundle, LdtkEntity, Default)]
 pub struct TreeBundle {
     tree: Tree,
-    #[sprite_sheet_bundle(no_grid)]
-    sprite_sheet_bundle: LdtkSpriteSheetBundle,
+    #[sprite_sheet(no_grid)]
+    sprite_sheet: Sprite,
     pub y_sort: YSort,
 }
 
@@ -33,8 +33,8 @@ pub struct House;
 #[derive(Bundle, LdtkEntity, Default)]
 pub struct HouseBundle {
     house: House,
-    #[sprite_sheet_bundle(no_grid)]
-    sprite_sheet_bundle: LdtkSpriteSheetBundle,
+    #[sprite_sheet(no_grid)]
+    sprite_sheet: Sprite,
     pub y_sort: YSort,
 }
 
@@ -52,24 +52,23 @@ fn spawn_player(
     game_assets: Res<GameAssets>,
     new_entity_instances: Query<(Entity, &EntityInstance, &Transform), Added<EntityInstance>>,
 ) {
-    println!("player containes");
     for (entity, entity_instance, transform) in new_entity_instances.iter() {
-        if entity_instance.identifier == "Player".to_string() {
+        if entity_instance.identifier == *"Player" {
             let animation_indices = AnimationIndices { first: 0, last: 3 };
-            println!("play create by app");
+            info!("Init player");
 
             commands
                 .entity(entity)
                 .insert((
-                    SpriteBundle {
-                        texture: game_assets.player_texture.clone(),
-                        transform: *transform,
-                        ..SpriteBundle::default()
+                    Sprite {
+                        image: game_assets.player_texture.clone(),
+                        texture_atlas: Some(TextureAtlas {
+                            layout: game_assets.player_layout.clone(),
+                            index: animation_indices.first,
+                        }),
+                        ..default()
                     },
-                    TextureAtlas {
-                        layout: game_assets.player_layout.clone(),
-                        index: animation_indices.first,
-                    },
+                    *transform,
                     animation_indices,
                     AnimationTimer(Timer::from_seconds(0.15, TimerMode::Repeating)),
                 ))
@@ -88,22 +87,22 @@ fn player_movement(
     let (player, mut transform, mut animation_indices) = player_query.single_mut();
 
     if keyboard.pressed(KeyCode::KeyW) {
-        transform.translation.y += player.speed * time.delta_seconds();
+        transform.translation.y += player.speed * time.delta_secs();
         animation_indices.first = 12;
         animation_indices.last = 15;
     }
     if keyboard.pressed(KeyCode::KeyS) {
-        transform.translation.y -= player.speed * time.delta_seconds();
+        transform.translation.y -= player.speed * time.delta_secs();
         animation_indices.first = 0;
         animation_indices.last = 3;
     }
     if keyboard.pressed(KeyCode::KeyA) {
-        transform.translation.x -= player.speed * time.delta_seconds();
+        transform.translation.x -= player.speed * time.delta_secs();
         animation_indices.first = 4;
         animation_indices.last = 7;
     }
     if keyboard.pressed(KeyCode::KeyD) {
-        transform.translation.x += player.speed * time.delta_seconds();
+        transform.translation.x += player.speed * time.delta_secs();
         animation_indices.first = 8;
         animation_indices.last = 11;
     }

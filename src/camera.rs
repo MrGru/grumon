@@ -1,12 +1,12 @@
 use bevy::prelude::*;
 
-use crate::{GameState, GAME_HEIGHT, GAME_WIDTH};
+use crate::{GAME_HEIGHT, GAME_WIDTH};
 
 pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
-        app.add_systems(OnEnter(GameState::Playing), spawn_camera);
+        app.add_systems(Startup, spawn_camera);
     }
 }
 
