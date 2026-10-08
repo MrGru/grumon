@@ -11,6 +11,7 @@ use super::{
     text::{short_name, unit_name},
 };
 use crate::{
+    PlayState,
     asset::GameAssets,
     content::{
         Content,
@@ -20,7 +21,7 @@ use crate::{
     ui::{self, FontKind},
 };
 
-const CARD_W: f32 = 190.0;
+pub const CARD_W: f32 = 190.0;
 const CARD_H: f32 = 104.0;
 const CARDS_TOP: f32 = 96.0;
 const PANELS_TOP: f32 = 430.0;
@@ -41,26 +42,50 @@ pub struct PopupText {
     age: f32,
 }
 
+/// Horizontal space each side may use for its cards (screen is 960 wide).
+const SIDE_LEFT: f32 = 16.0;
+const SIDE_RIGHT: f32 = 470.0;
+const PARTY_LEFT: f32 = 490.0;
+const COLUMN_GAP: f32 = 12.0;
+/// Vertical gap between cards in one row, leaving room for the intent line.
+const STACK_GAP: f32 = 34.0;
+
 /// Top-left corner of a unit's card.
+///
+/// Only occupied rows get a column, front rows nearest the centre. Columns
+/// overlap (with a vertical stagger) only when a side fills all three rows.
 pub fn card_pos(state: &BattleState, i: usize) -> Vec2 {
     let u = &state.units[i];
-    let column_x = match (u.side, u.slot) {
-        (Side::Enemy, Slot::Front) => 270.0,
-        (Side::Enemy, Slot::Middle) => 145.0,
-        (Side::Enemy, Slot::Back) => 20.0,
-        (Side::Party, Slot::Front) => 500.0,
-        (Side::Party, Slot::Middle) => 625.0,
-        (Side::Party, Slot::Back) => 750.0,
+    let rows: Vec<Slot> = [Slot::Front, Slot::Middle, Slot::Back]
+        .into_iter()
+        .filter(|&slot| {
+            state
+                .units
+                .iter()
+                .any(|v| v.side == u.side && v.slot == slot)
+        })
+        .collect();
+    let column = rows.iter().position(|&s| s == u.slot).unwrap_or(0);
+    let room = SIDE_RIGHT - SIDE_LEFT - CARD_W;
+    let step = if rows.len() > 1 {
+        (CARD_W + COLUMN_GAP).min(room / (rows.len() - 1) as f32)
+    } else {
+        0.0
+    };
+    let x = match u.side {
+        Side::Enemy => SIDE_RIGHT - CARD_W - column as f32 * step,
+        Side::Party => PARTY_LEFT + column as f32 * step,
     };
     let stack = (0..i)
         .filter(|&j| state.units[j].side == u.side && state.units[j].slot == u.slot)
         .count();
-    // Offset alternate columns so overlapping rows stay readable.
-    let stagger = if u.slot == Slot::Middle { 26.0 } else { 0.0 };
-    Vec2::new(
-        column_x,
-        CARDS_TOP + stack as f32 * (CARD_H + 6.0) + stagger,
-    )
+    let crowded = step < CARD_W + COLUMN_GAP;
+    let stagger = if crowded && column % 2 == 1 {
+        40.0
+    } else {
+        0.0
+    };
+    Vec2::new(x, CARDS_TOP + stack as f32 * (CARD_H + STACK_GAP) + stagger)
 }
 
 pub fn spawn_view(
@@ -80,6 +105,7 @@ pub fn spawn_view(
     let mut root = commands.spawn((
         Name::new("Battle"),
         BattleRoot,
+        DespawnOnExit(PlayState::Battle),
         ui::fullscreen(),
         BackgroundColor(ui::INK),
         GlobalZIndex(40),
@@ -104,6 +130,7 @@ fn bar(fraction: f32, color: Color, width: f32) -> impl Bundle {
         Node {
             width: Val::Px(width),
             height: Val::Px(7.0),
+            flex_shrink: 0.0,
             border_radius: BorderRadius::all(Val::Px(2.0)),
             ..default()
         },
@@ -161,7 +188,6 @@ fn hovered_target(session: &BattleSession) -> Option<usize> {
 fn unit_card(p: &mut ChildSpawnerCommands, session: &BattleSession, i: usize, ctx: &Ctx) {
     let state = &session.state;
     let u = &state.units[i];
-    let pos = card_pos(state, i);
     let active = state.phase == Phase::Command(i);
     let candidate =
         matches!(&session.mode, MenuMode::Target { candidates, .. } if candidates.contains(&i));
@@ -222,92 +248,9 @@ fn unit_card(p: &mut ChildSpawnerCommands, session: &BattleSession, i: usize, ct
         String::new()
     };
 
-    p.spawn((
-        BackgroundColor(Color::srgba(0.03, 0.05, 0.06, 0.82 * alpha)),
-        BorderColor::all(border),
-        Node {
-            position_type: PositionType::Absolute,
-            left: Val::Px(pos.x),
-            top: Val::Px(pos.y),
-            width: Val::Px(CARD_W),
-            height: Val::Px(CARD_H),
-            border: UiRect::all(Val::Px(if active || hovered { 2.0 } else { 1.0 })),
-            border_radius: BorderRadius::all(Val::Px(6.0)),
-            padding: UiRect::all(Val::Px(4.0)),
-            column_gap: Val::Px(4.0),
-            ..default()
-        },
-    ))
-    .with_children(|card| {
-        card.spawn((
-            sprite,
-            Node {
-                width: Val::Px(56.0),
-                height: Val::Px(56.0),
-                ..default()
-            },
-        ));
-        card.spawn(Node {
-            flex_direction: FlexDirection::Column,
-            row_gap: Val::Px(2.0),
-            width: Val::Px(122.0),
-            ..default()
-        })
-        .with_children(|col| {
-            col.spawn(ctx.text(
-                name,
-                FontKind::Bold,
-                14.0,
-                if active { ui::GOLD } else { ui::TEXT }.with_alpha(alpha),
-            ));
-            col.spawn(ctx.text(
-                format!("{} · {}", element, ctx.t(u.slot.key())),
-                FontKind::Body,
-                11.0,
-                ui::TEXT_DIM,
-            ));
-            col.spawn(bar(
-                u.hp as f32 / u.stats.hp.max(1) as f32,
-                ui::HP_COLOR,
-                118.0,
-            ));
-            col.spawn(ctx.text(
-                ctx.f(
-                    "ui.battle.hp",
-                    &[("now", u.hp.to_string()), ("max", u.stats.hp.to_string())],
-                ),
-                FontKind::Body,
-                11.0,
-                ui::TEXT,
-            ));
-            if u.stats.ll > 0 {
-                col.spawn(bar(
-                    u.ll as f32 / u.stats.ll.max(1) as f32,
-                    ui::LL_COLOR,
-                    118.0,
-                ));
-                col.spawn(ctx.text(
-                    ctx.f(
-                        "ui.battle.ll",
-                        &[("now", u.ll.to_string()), ("max", u.stats.ll.to_string())],
-                    ),
-                    FontKind::Body,
-                    11.0,
-                    ui::TEXT,
-                ));
-            }
-            if !charge.is_empty() {
-                col.spawn(ctx.text(charge, FontKind::Bold, 11.0, ui::GOLD));
-            }
-            if !statuses.is_empty() {
-                col.spawn(ctx.text(statuses.join(", "), FontKind::Body, 10.5, ui::JADE));
-            }
-        });
-    });
-
     // Enemy intent under the card.
+    let mut lines = Vec::new();
     if u.side == Side::Enemy && u.alive() {
-        let mut lines = Vec::new();
         if let Some(channel) = &u.channel {
             lines.push((
                 ctx.f(
@@ -365,25 +308,145 @@ fn unit_card(p: &mut ChildSpawnerCommands, session: &BattleSession, i: usize, ct
                 ));
             }
         }
-        p.spawn((
+    }
+
+    // Card and intent share a wrapper so a taller card pushes the intent down.
+    p.spawn(Node {
+        flex_direction: FlexDirection::Column,
+        row_gap: Val::Px(1.0),
+        ..default()
+    })
+    .with_children(|w| {
+        w.spawn((
+            BackgroundColor(Color::srgba(0.03, 0.05, 0.06, 0.82 * alpha)),
+            BorderColor::all(border),
             Node {
-                position_type: PositionType::Absolute,
-                left: Val::Px(pos.x),
-                top: Val::Px(pos.y + CARD_H + 1.0),
-                max_width: Val::Px(CARD_W + 40.0),
-                flex_direction: FlexDirection::Column,
-                padding: UiRect::axes(Val::Px(6.0), Val::Px(2.0)),
-                border_radius: BorderRadius::all(Val::Px(4.0)),
+                width: Val::Px(CARD_W),
+                min_height: Val::Px(CARD_H),
+                border: UiRect::all(Val::Px(if active || hovered { 2.0 } else { 1.0 })),
+                border_radius: BorderRadius::all(Val::Px(6.0)),
+                padding: UiRect::all(Val::Px(4.0)),
+                column_gap: Val::Px(4.0),
                 ..default()
             },
-            BackgroundColor(Color::srgba(0.02, 0.03, 0.04, 0.82)),
-            GlobalZIndex(41),
         ))
-        .with_children(|col| {
-            for (line, color) in lines {
-                col.spawn(ctx.text(line, FontKind::Body, 12.0, color));
-            }
+        .with_children(|card| {
+            card.spawn((
+                sprite,
+                Node {
+                    width: Val::Px(56.0),
+                    height: Val::Px(56.0),
+                    flex_shrink: 0.0,
+                    ..default()
+                },
+            ));
+            card.spawn(Node {
+                flex_direction: FlexDirection::Column,
+                row_gap: Val::Px(2.0),
+                // 190 card = 2×2 border + 2×4 padding + 56 sprite + 4 gap + 118.
+                width: Val::Px(118.0),
+                flex_shrink: 0.0,
+                ..default()
+            })
+            .with_children(|col| {
+                col.spawn(ctx.text(
+                    name,
+                    FontKind::Bold,
+                    14.0,
+                    if active { ui::GOLD } else { ui::TEXT }.with_alpha(alpha),
+                ));
+                col.spawn(ctx.text(
+                    format!("{} · {}", element, ctx.t(u.slot.key())),
+                    FontKind::Body,
+                    11.0,
+                    ui::TEXT_DIM,
+                ));
+                col.spawn(bar(
+                    u.hp as f32 / u.stats.hp.max(1) as f32,
+                    ui::HP_COLOR,
+                    114.0,
+                ));
+                col.spawn(ctx.text(
+                    ctx.f(
+                        "ui.battle.hp",
+                        &[("now", u.hp.to_string()), ("max", u.stats.hp.to_string())],
+                    ),
+                    FontKind::Body,
+                    11.0,
+                    ui::TEXT,
+                ));
+                if u.stats.ll > 0 {
+                    col.spawn(bar(
+                        u.ll as f32 / u.stats.ll.max(1) as f32,
+                        ui::LL_COLOR,
+                        114.0,
+                    ));
+                    col.spawn(ctx.text(
+                        ctx.f(
+                            "ui.battle.ll",
+                            &[("now", u.ll.to_string()), ("max", u.stats.ll.to_string())],
+                        ),
+                        FontKind::Body,
+                        11.0,
+                        ui::TEXT,
+                    ));
+                }
+                if !charge.is_empty() {
+                    col.spawn(ctx.text(charge, FontKind::Bold, 11.0, ui::GOLD));
+                }
+                if !statuses.is_empty() {
+                    col.spawn(ctx.text(statuses.join(", "), FontKind::Body, 10.5, ui::JADE));
+                }
+            });
         });
+        if !lines.is_empty() {
+            w.spawn((
+                Node {
+                    max_width: Val::Px(CARD_W + 40.0),
+                    flex_direction: FlexDirection::Column,
+                    padding: UiRect::axes(Val::Px(6.0), Val::Px(2.0)),
+                    border_radius: BorderRadius::all(Val::Px(4.0)),
+                    align_self: AlignSelf::FlexStart,
+                    ..default()
+                },
+                BackgroundColor(Color::srgba(0.02, 0.03, 0.04, 0.82)),
+                GlobalZIndex(41),
+            ))
+            .with_children(|col| {
+                for (line, color) in lines {
+                    col.spawn(ctx.text(line, FontKind::Body, 12.0, color));
+                }
+            });
+        }
+    });
+}
+
+/// One absolutely placed column per occupied row; cards stack inside it.
+fn unit_columns(p: &mut ChildSpawnerCommands, session: &BattleSession, ctx: &Ctx) {
+    let state = &session.state;
+    for side in [Side::Enemy, Side::Party] {
+        for slot in [Slot::Front, Slot::Middle, Slot::Back] {
+            let members: Vec<usize> = (0..state.units.len())
+                .filter(|&i| state.units[i].side == side && state.units[i].slot == slot)
+                .collect();
+            let Some(&first) = members.first() else {
+                continue;
+            };
+            let pos = card_pos(state, first);
+            p.spawn(Node {
+                position_type: PositionType::Absolute,
+                left: Val::Px(pos.x),
+                top: Val::Px(pos.y),
+                flex_direction: FlexDirection::Column,
+                row_gap: Val::Px(6.0),
+                ..default()
+            })
+            .with_children(|col| {
+                for i in members {
+                    unit_card(col, session, i, ctx);
+                }
+            });
+        }
     }
 }
 
@@ -1030,9 +1093,7 @@ pub fn redraw(
     commands.entity(root).with_children(|p| {
         timeline(p, &session.state, &ctx);
         objective_and_formation(p, &session.state, &ctx);
-        for i in 0..session.state.units.len() {
-            unit_card(p, session, i, &ctx);
-        }
+        unit_columns(p, session, &ctx);
         bottom_panels(p, session, &ctx);
 
         if let Some(hint) = session.hints.first() {

@@ -435,3 +435,26 @@ fn trace_one() {
         b.units.iter().map(|u| u.hp).collect::<Vec<_>>()
     );
 }
+
+#[test]
+fn battle_cards_of_different_rows_never_overlap() {
+    use crate::battle::view::{CARD_W, card_pos};
+    let db = db();
+    let p = progress(&db, true, &[]);
+    for id in db.encounters.keys() {
+        let b = BattleState::from_progress(&db, &p, id, 1).expect("battle");
+        for i in 0..b.units.len() {
+            for j in 0..b.units.len() {
+                let (a, c) = (&b.units[i], &b.units[j]);
+                if a.side == c.side && a.slot == c.slot {
+                    continue;
+                }
+                let (pa, pc) = (card_pos(&b, i), card_pos(&b, j));
+                assert!(
+                    (pa.x - pc.x).abs() >= CARD_W,
+                    "{id}: cards {i} and {j} overlap ({pa} vs {pc})"
+                );
+            }
+        }
+    }
+}

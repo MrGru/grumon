@@ -29,6 +29,8 @@ cargo run                      # play (debug build, inspector available)
 cargo run --features dev       # faster incremental builds (Bevy dynamic linking)
 cargo test                     # all tests: logic, content validation, battle balance, Ch1 playthroughs
 cargo test balance -- --nocapture   # print battle simulation win rates
+QA_SAVE_DIR=/tmp/qa cargo test export_qa_saves -- --ignored   # saves that start inside Ch1 battles
+THIEN_MENH_SAVE_DIR=/tmp/qa cargo run                            # ...then load them from the title
 cargo clippy --all-targets     # lint; keep it warning-free
 cargo fmt                      # format before committing
 cargo build --release          # size-optimized release build

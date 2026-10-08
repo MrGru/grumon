@@ -25,6 +25,8 @@ struct Sim {
     /// (dialogue, node) → option id to pick.
     choices: HashMap<(String, String), String>,
     battles: Vec<String>,
+    /// Progress at the moment each battle started.
+    snapshots: Vec<(String, Progress)>,
     cards: Vec<String>,
     autosaves: u32,
 }
@@ -57,6 +59,7 @@ impl Sim {
             queue: VecDeque::new(),
             choices: HashMap::new(),
             battles: Vec::new(),
+            snapshots: Vec::new(),
             cards: Vec::new(),
             autosaves: 0,
         }
@@ -120,6 +123,7 @@ impl Sim {
                 Deferred::Dialogue(id) => self.play_dialogue(&id),
                 Deferred::Battle(id) => {
                     self.battles.push(id.clone());
+                    self.snapshots.push((id.clone(), self.p.clone()));
                     let enc = self.db.encounters[&id].clone();
                     self.run(&enc.on_victory);
                 }
@@ -380,4 +384,57 @@ fn raid_blocks_leaving_the_village_until_the_battle() {
     assert_eq!(s.p.feet, (92, 196));
     // The forest's wolves only appear after ông Mạc's last stand.
     assert!(!s.p.eval_opt(&s.db.triggers["ch1_lang_dem_zone"].when));
+}
+
+/// Writes saves that start inside Ch1 battles (quick: boar, slot 1: raid,
+/// slot 2: Lang Nha), for
+/// checking them in the running game:
+/// `QA_SAVE_DIR=/tmp/qa cargo test export_qa_saves -- --ignored`, then run the
+/// game with `THIEN_MENH_SAVE_DIR=/tmp/qa` and load a slot.
+#[test]
+#[ignore]
+fn export_qa_saves() {
+    use crate::{
+        battle::core::BattleState,
+        save::{SaveFile, SaveSlot, write_save},
+    };
+    let dir = std::env::var("QA_SAVE_DIR").expect("set QA_SAVE_DIR");
+    let mut s = Sim::new(Addressing::Female);
+    s.choose("ch1_lien_dusk", "ready", "go");
+    s.choose("ch1_dau_raid", "d3", "save");
+    s.start_chapter();
+    s.enter("ch1_da_tru_zone");
+    for herb in ["ch1_herb_2", "ch1_herb_3", "ch1_herb_4"] {
+        s.use_object(herb);
+    }
+    s.talk("ong_mac_day");
+    s.talk("lien_dusk");
+    s.enter("ch1_hac_y_zone");
+    s.talk("be_dau_raid");
+    s.talk("ong_mac_raid");
+    s.enter("ch1_lang_dem_zone");
+    s.use_object("ch1_mieu_son_than");
+    // Where the player stands when each battle starts (LDtk pixels).
+    let spots = [
+        ("ch1_da_tru", SaveSlot::Quick, "Forest", (288, 192)),
+        ("ch1_dem_mua", SaveSlot::Manual(1), "Village", (216, 252)),
+        ("ch1_lang_nha", SaveSlot::Manual(2), "Snowfield", (850, 140)),
+    ];
+    for (encounter, slot, level, feet) in spots {
+        let (_, progress) = s
+            .snapshots
+            .iter()
+            .find(|(id, _)| id == encounter)
+            .unwrap_or_else(|| panic!("{encounter} never started"));
+        let mut progress = progress.clone();
+        progress.level = level.into();
+        progress.feet = feet;
+        let battle = BattleState::from_progress(&s.db, &progress, encounter, 7).expect("battle");
+        write_save(
+            Path::new(&dir),
+            slot,
+            &SaveFile::new(&progress, None, Some(battle)),
+        )
+        .expect("write save");
+    }
 }

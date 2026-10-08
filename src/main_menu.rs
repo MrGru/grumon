@@ -22,6 +22,9 @@ struct TitleMenuList;
 #[derive(Component)]
 struct TitleMessage;
 
+#[derive(Component)]
+struct TitleFooter;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum View {
     Main,
@@ -152,6 +155,7 @@ fn spawn_title(mut commands: Commands, assets: Res<GameAssets>, content: Res<Con
                 ],
             ),
             (
+                TitleFooter,
                 Text::new(content.ui("ui.title.footer")),
                 ui::font(&assets, FontKind::Body, 14.0),
                 TextColor(ui::TEXT_DIM),
@@ -310,6 +314,7 @@ fn redraw_menu(
     mut menu: ResMut<TitleMenu>,
     list: Query<Entity, With<TitleMenuList>>,
     mut message: Query<&mut Text, With<TitleMessage>>,
+    mut footer: Query<&mut Visibility, With<TitleFooter>>,
 ) {
     if !menu.dirty {
         return;
@@ -331,6 +336,14 @@ fn redraw_menu(
         ));
     }
     ui::menu_rows(&mut commands, list, &assets, &rows, menu.cursor, size);
+    // The slot list is tall; its back hint would collide with the footer.
+    if let Ok(mut visibility) = footer.single_mut() {
+        *visibility = if menu.view == View::Load {
+            Visibility::Hidden
+        } else {
+            Visibility::Inherited
+        };
+    }
     if let Ok(mut text) = message.single_mut() {
         text.0 = if menu.view == View::Load {
             content.ui("ui.common.back_hint")

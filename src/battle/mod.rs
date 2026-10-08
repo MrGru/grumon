@@ -427,8 +427,14 @@ fn choose(session: &mut BattleSession, story: &Story, actor: usize) -> Option<Co
         }
     };
     if let Some(next) = next_mode {
+        // A submenu with nothing in it (no items, no artifacts, no target)
+        // would trap the cursor; stay where we are instead.
+        let previous = std::mem::replace(&mut session.mode, next);
+        if menu_len(session, actor) == 0 {
+            session.mode = previous;
+            return None;
+        }
         session.cursors.push(session.cursor);
-        session.mode = next;
         session.cursor = 0;
         // Default target: the first candidate; for allies prefer the actor.
         if let MenuMode::Target { candidates, .. } = &session.mode

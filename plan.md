@@ -53,8 +53,11 @@ is no audio, there are no portraits, and the tileset is the original Grumon plac
 | Quests with journal and tracker | [x] | `story::tests::quest_completes_and_chains`, HUD screenshot |
 | Boss: Lang Nha | [x] | `showcase_2_lang_nha_two_approaches` |
 | Every story branch reaches the end of the chapter | [x] | Two scripted paths plus side-quest failure tests. Not exhaustive over all choice combinations |
-| **Hand-checked in the running game: raid formation battle, Lang Nha, chapter end** | [ ] | Covered only by simulations and story tests so far |
-| **Save/load tested in-game during combat and at chapter transitions** | [~] | `save_and_load_mid_battle_is_identical` (engine) and in-game save inside dialogue. A save made mid-battle has not been loaded in the running game |
+| Raid formation battle and Lang Nha battle checked in the running game | [~] | Loaded from QA saves (`story_tests::export_qa_saves`): opening turns played, shield, guard, Tụ khí stages 1–2 and a stage-2 *Phá Thạch Quyền* release work. Neither fight was played to the end by hand |
+| Battle ends and returns to the map, autosave written | [x] | In-game: boar battle won from a QA save, back on the Forest map, `auto.json` has `ch1.da_tru_defeated` |
+| Chapter end (dawn, farewell) checked by hand | [ ] | Covered by `story_tests` only |
+| Save/load in-game during dialogue and combat | [x] | F5 inside a dialogue and inside the raid battle; F9 and the title load screen resume the exact node / battle state |
+| Save/load across a chapter transition | [ ] | There is only one chapter so far |
 | Audio (music + SFX) | [ ] | No audio exists. See asset-manifest.md §4 |
 | Visual presentation: portraits, xianxia tileset, battle VFX | [ ] | Generated placeholder art only |
 | Item use outside battle (pause menu) | [ ] | Items can only be used in battle |
