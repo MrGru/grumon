@@ -162,6 +162,9 @@ at or above a stage (e.g. *Phá Thạch Quyền* applies **Phá giáp** at stage
 Instant versions are always available (stage 0). Release early for safety, or keep charging for
 power.
 
+Content status: 3 of the 8 planned chargeable techniques ship (`pha_thach_quyen`,
+`nghich_menh_chi`, `kiem_phoi_tram`). The other five come with the Ch2–Ch3 companions ⏳.
+
 ### 4.3 Breaking a charge
 
 When a charging unit (charge > 0)…
@@ -191,7 +194,7 @@ player always sees what is coming and when.
 
 ---
 
-## 5. Trận pháp (formations) ✅ core / 🟡 content
+## 5. Trận pháp (formations) ✅ core / 🟡 content (4 of 6 in data)
 
 ### 5.1 Setup
 
@@ -227,7 +230,7 @@ boundary (`cycle_pulse`). Energy is capped at the last threshold.
 Requires phase ≥ 1. Applies the release effects with `power × phase`, then resets energy and phase
 to 0. Use it as an emergency burst or to cash in before a node breaks.
 
-### 5.6 Formation catalogue (minimum 6)
+### 5.6 Formation catalogue (minimum 6; 4 implemented)
 
 | ID | Name | Members | Thresholds | Identity |
 |----|------|---------|------------|----------|
@@ -240,7 +243,7 @@ to 0. Use it as an emergency burst or to cash in before a node breaks.
 
 ---
 
-## 6. Pháp bảo (active artifacts) ✅ core / 🟡 content
+## 6. Pháp bảo (active artifacts) ✅ core / ✅ 12 in data (13th ⏳)
 
 ### 6.1 Taxonomy and tiers
 
@@ -356,15 +359,18 @@ restores the generator, so outcomes are reproducible.
 
 ### 8.1 Archetypes (minimum 6 that react to the systems)
 
-| Archetype | Vietnamese | Reacts to | Example |
-|-----------|-----------|-----------|---------|
-| Assassin | **Thích khách** | High Thân pháp; hunts the lowest-HP back-row unit | Linh Lang, Ảnh Sát |
-| Interrupter | **Kẻ ngắt quãng** | Reactive rule: targets any unit with Tụ khí ≥ 1 using `interrupt` | Lang Nha |
-| Shield guardian | **Hộ vệ** | Shields allies, taunts; weak to Phá Linh Trận | Thiết Giáp Vệ |
-| Drainer | **Kẻ hút linh** | Drains Linh lực; punishes long charges | Âm Hồn |
-| Formation breaker | **Phá trận sư** | Targets formation nodes when phase ≥ 1 | Huyết Y Vệ |
-| Channeller boss | **Chú sư** | Long telegraphed windups that must be interrupted or guarded | Đồ Cuồng |
-| Illusionist | **Huyễn sư** | Hư ảnh on allies, Chậm on party | Tiết Mị Nương |
+| Archetype | Vietnamese | Reacts to | In data (Ch1) | Status |
+|-----------|-----------|-----------|---------------|--------|
+| Assassin | **Thích khách** | High Thân pháp; hunts the lowest-HP unit | `linh_lang`, `hac_y_tay_sai` | ✅ |
+| Channeller | **Chú sư** | Long telegraphed windups that must be interrupted, pushed or guarded | `da_tru`, `lang_dau` (and Đồ Cuồng's *Huyết Sát Trảm*) | ✅ |
+| Interrupter | **Kẻ ngắt quãng** | Reactive rule: punishes any unit at Tụ khí ≥ 2 with an `interrupt` dart | `lang_nha` | ✅ |
+| Formation breaker | **Phá trận sư** | *Phá Trận Quyền* drains formation energy when phase ≥ 1 | `do_cuong` | ✅ |
+| Shield guardian | **Hộ vệ** | Shields allies, taunts; weak to Phá Linh Trận | Thiết Giáp Vệ (Ch2) | ⏳ |
+| Drainer | **Kẻ hút linh** | Drains Linh lực; punishes long charges | Âm Hồn (Ch3) | ⏳ |
+| Illusionist | **Huyễn sư** | Hư ảnh on allies, Chậm on party | Tiết Mị Nương (Ch4) | ⏳ |
+
+The engine supports all seven (their conditions, targets and effects exist and are unit tested);
+four have shipped enemies. The target of six archetypes in content is **not yet met**.
 
 ### 8.2 AI
 
@@ -390,19 +396,48 @@ Ranged attacks can target anyone. Slots: **Tiền** (front), **Trung** (middle),
 
 ### 8.5 Showcase battles (Chương 1)
 
-| # | Encounter | Teaches | Two viable approaches |
-|---|-----------|---------|-----------------------|
-| 1 | `ch1_lang_dem` — two Linh Lang + Lang Đầu at night | Thân pháp, timeline, Đẩy lùi | (a) Ném đá to push the Lang Đầu's channelled bite past your turn and focus a wolf; (b) Thủ thế on the bite turn and trade with Khói Mê Hương |
-| 2 | `ch1_lang_nha` — Lang Nha + Linh Lang (boss) | Tụ khí vs interruption | (a) Charge only right after Lang Nha acts (the timeline shows the safe window), release *Phá Thạch Quyền* stage 2–3; (b) kill the wolf first with instant techniques and use Tụ Linh Hồ Lô to charge+release in one turn |
-| 3 | `ch1_dem_mua` — night raid with ông Mạc | Trận pháp + Pháp bảo synergy | Objective “reach Hộ Tâm Trận phase 3”. (a) Ông Mạc's Huyền Quy Thuẫn shield converts blocked damage into formation energy — feed the Đồ Cuồng's telegraphed blow into the shield; (b) play defensively with Thủ thế and items and let cycles build energy |
+All three are in `assets/data/ch1.data.ron` and simulated by `src/battle/balance_tests.rs`.
+
+| # | Encounter | Teaches | Two viable approaches (simulated policy) |
+|---|-----------|---------|------------------------------------------|
+| 1 | `ch1_lang_dem` — Lang Đầu + two Linh Lang at night | Thân pháp, timeline, Đẩy lùi | (a) `pusher`: Ném đá pushes the Lang Đầu's channelled bite past your turn while you kill the wolves (only the 3 stones every player gets); (b) `careful`: Thủ thế on the bite turn and trade with the side-quest food and Khói Mê Hương |
+| 2 | `ch1_lang_nha` — Lang Nha + Linh Lang (boss) | Tụ khí vs interruption | Lang Nha's dart is reactive at **stage 2+**, so stage 1 is safe. (a) `safe_charger`: hold at stage 1, then charge to 2 and release *Phá Thạch Quyền* in the same activation; (b) `gourd_burst`: Tụ Linh Hồ Lô's *Phóng linh* adds a stage on top of the normal charge for a one-turn 0 → 2 release. Lang Nha enrages (*Cường hóa*) below 50 % |
+| 3 | `ch1_dem_mua` — night raid with ông Mạc | Trận pháp + Pháp bảo synergy | Objective “reach Hộ Tâm Trận phase 3”, protect ông Mạc; Đồ Cuồng is invulnerable. (a) `shield_the_blow`: Huyền Quy Thuẫn on whoever Đồ Cuồng's telegraphed *Huyết Sát Trảm* targets, so blocked damage becomes formation energy; (b) `turtle`: Thủ thế + items and let cycles build energy. Saving bé Đậu earlier starts ông Mạc at 75 % |
 
 ### 8.6 Balance targets (instrumented by `cargo test` simulations)
 
 - Normal battle: 3–6 player activations. Boss: 8–15.
 - No universal technique: in simulations of the showcase battles at least two distinct scripted
-  strategies must win.
-- Soft-lock checks: every encounter terminates within 200 activations under a passive “always
-  guard” script.
+  strategies must win, and both must beat button-mashing.
+- Soft-lock check: the simulator asserts every battle ends.
+
+Latest results (`cargo test balance -- --nocapture`):
+
+| Battle | Policy | Wins | HP left | Activations |
+|--------|--------|------|---------|-------------|
+| `ch1_da_tru` (tutorial) | naive / careful | 100 % / 100 % | 66 % | 4 |
+| `ch1_hac_y` | careful | 100 % | 60 % | 5 |
+| `ch1_lang_dem` | pusher (minimal kit) | 100 % | 16 % | 15 |
+| | careful (full kit) | 100 % | 56 % | 17 |
+| | naive | 70 % | 19 % | 13 |
+| `ch1_lang_nha` | safe_charger | 100 % | 30 % | 12 |
+| | gourd_burst | 100 % | 12 % | 14 |
+| | naive | 0 % | – | 17 |
+| `ch1_dem_mua` | shield_the_blow | 100 % | 78 % | 11 |
+| | turtle | 100 % | 91 % | 11 |
+| | naive | 37 % | 20 % | 23 |
+
+Known gap: `ch1_lang_dem` runs longer than the 3–6 activation target for normal battles. It is a
+three-enemy pack that serves as the chapter's mid-boss.
+
+Rules settled during balancing:
+- The party starts every battle at full Khí huyết and Linh lực (no attrition between battles in
+  Ch1). Items used in battle are consumed.
+- Mortals (Phàm Nhân) cannot Tụ khí (`max_charge = 0`; the menu hides the command). The
+  protagonist unlocks it on awakening in Ch1.
+- Bosses gain push resistance: each push on the same boss halves the next (`push_resist`, capped).
+- Haste on the acting unit is banked (`pending_haste`) and applied when its next activation is
+  scheduled; haste never moves a unit before the current clock.
 
 ---
 
@@ -426,11 +461,11 @@ there is no grinding gate: main-quest tu vi alone reaches every story gate.
 ### 9.2 Stat growth
 
 `stat = base + growth * stage_index` where `stage_index` counts every stage reached (Luyện Khí sơ
-kỳ = 1). Per-character base and growth live in `assets/data/characters.ron`.
+kỳ = 1). Per-character base and growth live in `assets/data/core.data.ron` (`characters`). Ch1 cumulative tu vi thresholds: 60 / 180 / 380.
 
 ### 9.3 Nghịch Mệnh Quyết
 
-- Unlocks Quá Tụ (§4.4) and *Nghịch Lưu* (convert 15 % Khí huyết into 25 Linh lực, 0 AP, once per activation) ⏳.
+- Unlocks Quá Tụ (§4.4, ✅ engine, `stat.tam_ma` recorded after battle) and *Nghịch Lưu* (convert 15 % Khí huyết into 25 Linh lực, 0 AP, once per activation) ⏳.
 - **Tâm Ma** (`stat.tam_ma`) rises with Quá Tụ releases and cruel choices; **Nhân Tâm**
   (`stat.nhan_tam`) rises with mercy. Both affect the Ch5 inner-demon trial and ending dialogue.
 

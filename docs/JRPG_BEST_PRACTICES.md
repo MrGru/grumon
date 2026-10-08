@@ -61,7 +61,7 @@ ECS systems are thin glue that read input, call the logic, and write results.
 - Every NPC needs a reason to exist: a hint about nearby areas, a piece of lore, humor, or a quest hook.
 - Give each NPC a distinct voice (the stern guard, the shy kid, the boastful sailor).
 - Later: dialogue trees with choices, conditions (`if flag X`) and effects (`give item`, `set flag`) should be data (e.g. a RON dialogue asset or Yarn Spinner), not Rust code.
-- **Fonts:** the current pixel font (`grumon.ttf`) only covers Latin-1. Localized text (e.g. Vietnamese) needs a font with the right glyphs and a localization layer (e.g. Fluent).
+- **Fonts and text:** all game text goes through the vi-VN locale (`assets/locale/`) and is drawn with Be Vietnam Pro / Noto Serif Display. `cargo test` fails if any character lacks a glyph, so check coverage before adding new symbols.
 
 ## 5. Camera and presentation
 

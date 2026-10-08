@@ -228,16 +228,17 @@ HealParty   Autosave   TimeOfDay(Day|Dusk|Night|Raid|Dawn)   Notify(key)
 
 ```ron
 (id: "ch1_hai_thuoc", chapter: 1, kind: Main, giver: Some("ong_mac"),
- prerequisites: [],
  objectives: [
    (id: "gather", done_when: HasItem("thanh_tam_thao", 3)),
    (id: "return",  done_when: Flag("ch1.herbs_delivered")),
  ],
  rewards: [GiveMoney(20), GainTuVi(0)],
- on_complete: [StartQuest("ch1_mot_ngay")],
- fail_when: None, next: ["ch1_mot_ngay"])
+ on_complete: [StartQuest("ch1_le_hoi")],
+ fail_when: None)
 ```
-Objectives are shown in order; an objective is shown complete when its condition holds. The quest
+There are no prerequisites: quests start through `StartQuest` effects in dialogue, triggers or
+`on_complete`. `fail_when` fails an active quest once its condition holds (Ch1 side quests fail
+when the raid starts). Objectives are shown in order; an objective is shown complete when its condition holds. The quest
 completes when all objectives hold (checked whenever story state changes).
 
 ### 3.14 Map triggers and objects
@@ -248,16 +249,27 @@ field `id`:
 ```ron
 triggers: [(id: "ch1_forest_footprints", when: Some(QuestActive("ch1_hai_thuoc")), once: true,
             effects: [Dialogue("ch1_footprints")])],
-objects:  [(id: "ch1_herb_1", when: Some(Not(Flag("obj.ch1_herb_1"))), sprite: Some((288, 304, 16, 16)),
-            solid: false, effects: [GiveItem("thanh_tam_thao", 1), SetFlag("obj.ch1_herb_1", 1)])],
+objects:  [(id: "ch1_herb_1", sheet: Objects, sprite: Some((48, 0, 16, 16)), once: true,
+            effects: [GiveItem("thanh_tam_thao", 1)])],
 ```
-`sprite` is a rectangle in `gfx/tileset/tileset.png`. `once: true` sets `trigger.<id>` automatically.
+`sprite` is a rectangle `(x, y, w, h)` in `sheet`: `Objects` (`gfx/objects/objects.png`, generated
+by `tools/gen_art.py`) or `Tileset` (`gfx/tileset/tileset.png`, the default). `solid: true` gives
+the object a collider. `once: true` on a trigger sets `trigger.<id>`; on an object it sets
+`obj.<id>` and hides the object. Triggers fire when the player's feet *enter* the zone (edge
+triggered), only while exploring.
+
+Map placements live in `assets/world.ldtk` and are written by `tools/build_ch1_map.py`, which is
+idempotent (re-running it replaces its own placements).
 
 ## 4. Chapters
 
 ```ron
-chapters: [(number: 1, start_level: "Village", start_dialogue: "ch1_prologue", start_quest: "ch1_hai_thuoc")]
+chapters: [(number: 1, start_level: "Village", start_feet: Some((232, 204)),
+             start_effects: [SetFlag("fx.blackout", 1), Card("ch1_title"), Dialogue("ch1_prologue")])]
 ```
+`start_feet` is in LDtk pixels of `start_level`; `None` uses the LDtk `Player` marker.
+`start_effects` run once when a new game begins. `fx.blackout` keeps the screen black for narrated
+scenes until a dialogue clears it.
 
 ## 5. Validation (cargo test)
 
@@ -271,7 +283,14 @@ chapters: [(number: 1, start_level: "Village", start_dialogue: "ch1_prologue", s
   `Level Up`, `Save`, `Loading`, `Game Over`, `Inventory`, `Skill`, …) or is ASCII-only prose
   where Vietnamese diacritics are expected;
 - a character in any `vi-VN` string has no glyph in the bundled fonts;
-- every LDtk `Npc`/`Trigger`/`Object` `id` exists in data.
+- an LDtk `Npc`/`Trigger`/`Object` `id` does not exist in data;
+- a string is not NFC-normalised, contains placeholder text (`TODO`, `TBD`, `lorem`), or is
+  ASCII-only prose of four or more words.
+
+The tests are in `src/content/mod.rs`: `shipped_content_is_valid` (validator plus minimum content
+counts), `fonts_cover_every_character` (parses the TTFs with `ttf-parser`) and `code_keys_exist`
+(every `"ui.…"`/`"reason.…"` literal used in Rust exists in the locale). Missing keys render as
+`«key»` at runtime so a gap is visible but never crashes.
 
 ## 6. Story flags
 
@@ -286,11 +305,11 @@ Flags are `String → i32` (0 = unset). Namespaces:
 | `rep.` | Faction reputation | `rep.thanh_huyen_mon` |
 | `stat.` | Hidden moral stats | `stat.tam_ma`, `stat.nhan_tam` |
 | `tut.` | Tutorials seen | `tut.timeline` |
-| `world.` | World state | `world.time` (0 day, 1 dusk, 2 night, 3 raid, 4 dawn) |
+| `fx.` | Screen effects | `fx.blackout` |
 
 ## 7. Save file
 
-Location: `$XDG_DATA_HOME/thien-menh-tan-hon/saves` (Linux), `%APPDATA%\thien-menh-tan-hon\saves`
+Location: `$XDG_DATA_HOME/thien-menh-tan-hon/saves`, falling back to `~/.local/share/…` (Linux), `%APPDATA%\thien-menh-tan-hon\saves`
 (Windows), `~/Library/Application Support/thien-menh-tan-hon/saves` (macOS); override with
 `THIEN_MENH_SAVE_DIR`.
 
