@@ -33,7 +33,7 @@ assets/
 ```
 
 Only `vi-VN` exists and ships. Adding `en-US` later = adding `assets/locale/en-US/` with the same
-keys; nothing else changes. Missing keys fall back to `vi-VN`, then to a visible `⟦key⟧` marker that
+keys; nothing else changes. Missing keys fall back to `vi-VN`, then to a visible `«key»` marker that
 the validator forbids.
 
 ### 2.2 Key conventions (derived from IDs — no key fields in data)

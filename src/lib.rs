@@ -3,33 +3,37 @@ use bevy_asset_loader::loading_state::{
     LoadingState, LoadingStateAppExt, config::ConfigureLoadingState,
 };
 
-use animation::AnimationPlugin;
-use asset::GameAssets;
-use camera::CameraPlugin;
-use collision::CollisionPlugin;
-use debug::DebugPlugin;
-use dialogue::DialoguePlugin;
-use level::LevelPlugin;
-use main_menu::MainMenuPlugin;
-use npc::NpcPlugin;
-use player::PlayerPlugin;
-use transition::TransitionPlugin;
-use ysort::YSortPlugin;
-
 mod animation;
 mod asset;
+pub mod battle;
 mod camera;
+mod character_creation;
 mod collision;
+pub mod content;
 mod debug;
 mod dialogue;
+mod flow;
+mod hud;
+mod input;
 mod level;
 mod main_menu;
+mod map_events;
 mod npc;
+mod pause_menu;
 mod player;
+pub mod save;
+mod screen_fx;
+pub mod story;
+#[cfg(test)]
+mod story_tests;
+pub mod telex;
 mod transition;
+mod ui;
 mod ysort;
 
-pub const CLEAR: Color = Color::srgb(0.1, 0.1, 0.1);
+/// Window title (also the game's name).
+pub const GAME_TITLE: &str = "THIÊN MỆNH: TÀN HỒN";
+pub const CLEAR: Color = Color::srgb(0.02, 0.03, 0.04);
 pub const GAME_WIDTH: u32 = 960;
 pub const GAME_HEIGHT: u32 = 640;
 /// Size of one LDtk grid cell in pixels.
@@ -40,7 +44,11 @@ pub const TILE_SIZE: f32 = 16.0;
 pub enum GameState {
     #[default]
     Loading,
+    /// Title screen.
     Menu,
+    CharacterCreation,
+    /// One-frame bridge so a new game or a loaded save re-enters `Playing` cleanly.
+    Starting,
     Playing,
 }
 
@@ -51,38 +59,57 @@ pub enum GameState {
 #[derive(SubStates, Clone, Eq, PartialEq, Debug, Hash, Default)]
 #[source(GameState = GameState::Playing)]
 pub enum PlayState {
-    /// Free movement on the map.
+    /// Screen is black/fading while a map loads. Every session starts here.
     #[default]
+    Transition,
+    /// Free movement on the map.
     Exploring,
     /// A dialogue box is open; input drives the conversation.
     Dialogue,
-    /// Screen is fading while the next map loads.
-    Transition,
+    /// Tactical battle screen.
+    Battle,
+    /// Pause menu (party, inventory, journal, saves).
+    Paused,
+    /// Full-screen chapter or story card.
+    Card,
 }
 
 pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.init_state::<GameState>()
+        app.add_plugins(content::ContentPlugin)
+            .init_state::<GameState>()
             .add_sub_state::<PlayState>()
             .add_loading_state(
                 LoadingState::new(GameState::Loading)
                     .continue_to_state(GameState::Menu)
-                    .load_collection::<GameAssets>(),
+                    .load_collection::<asset::GameAssets>()
+                    .finally_init_resource::<content::Content>(),
             )
             .add_plugins((
-                CameraPlugin,
-                LevelPlugin,
-                MainMenuPlugin,
-                AnimationPlugin,
-                YSortPlugin,
-                CollisionPlugin,
-                PlayerPlugin,
-                NpcPlugin,
-                DialoguePlugin,
-                TransitionPlugin,
-                DebugPlugin,
+                input::InputPlugin,
+                camera::CameraPlugin,
+                level::LevelPlugin,
+                main_menu::MainMenuPlugin,
+                character_creation::CharacterCreationPlugin,
+                animation::AnimationPlugin,
+                ysort::YSortPlugin,
+                collision::CollisionPlugin,
+                player::PlayerPlugin,
+                npc::NpcPlugin,
+                map_events::MapEventsPlugin,
+            ))
+            .add_plugins((
+                flow::FlowPlugin,
+                dialogue::DialoguePlugin,
+                transition::TransitionPlugin,
+                battle::BattlePlugin,
+                hud::HudPlugin,
+                pause_menu::PauseMenuPlugin,
+                save::SavePlugin,
+                screen_fx::ScreenFxPlugin,
+                debug::DebugPlugin,
             ));
     }
 }
