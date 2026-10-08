@@ -1,5 +1,5 @@
 use bevy::{prelude::*, window::WindowResolution};
-use grumon::{GamePlugin, CLEAR, GAME_HEIGHT, GAME_WIDTH};
+use grumon::{CLEAR, GAME_HEIGHT, GAME_WIDTH, GamePlugin};
 
 fn main() {
     App::new()
@@ -13,7 +13,7 @@ fn main() {
                         resolution: WindowResolution::new(GAME_WIDTH, GAME_HEIGHT),
                         ..default()
                     }),
-                    ..Default::default()
+                    ..default()
                 })
                 .set(ImagePlugin::default_nearest()),
         )

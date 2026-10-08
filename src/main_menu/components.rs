@@ -3,8 +3,8 @@ use bevy::prelude::*;
 #[derive(Component)]
 pub struct MainMenu;
 
-#[derive(Component)]
-pub struct PlayButton;
-
-#[derive(Component)]
-pub struct QuitButton;
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MenuButton {
+    Play,
+    Quit,
+}

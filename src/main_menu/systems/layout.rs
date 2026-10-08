@@ -1,59 +1,62 @@
-use bevy::{
-    color::palettes::{self, css::BLUE},
-    prelude::*,
-};
+use bevy::prelude::*;
 
 use crate::{
     asset::GameAssets,
     main_menu::{
-        components::{MainMenu, PlayButton},
-        styles::{BUTTON_STYLE, NORMAL_BUTTON_COLOR},
+        components::{MainMenu, MenuButton},
+        styles::*,
     },
 };
 
 pub fn spawn_main_menu(mut commands: Commands, game_assets: Res<GameAssets>) {
-    let main_menu_entity = build_main_menu(&mut commands, game_assets);
+    let font = |size: f32| TextFont {
+        font: game_assets.grumon_font.clone().into(),
+        font_size: FontSize::Px(size),
+        ..default()
+    };
+    let button = |kind: MenuButton, label: &str| {
+        (
+            kind,
+            Button,
+            button_node(),
+            BackgroundColor(NORMAL_BUTTON_COLOR),
+            BorderColor::all(BORDER_COLOR),
+            children![(Text::new(label), font(24.0), TextColor(TEXT_COLOR))],
+        )
+    };
+
+    commands.spawn((
+        Name::new("MainMenu"),
+        MainMenu,
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            flex_direction: FlexDirection::Column,
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            row_gap: Val::Px(24.0),
+            ..default()
+        },
+        BackgroundColor(BACKGROUND_COLOR),
+        children![
+            (Text::new("GRUMON"), font(72.0), TextColor(TITLE_COLOR)),
+            (
+                Text::new("Press Enter to start"),
+                font(18.0),
+                TextColor(TEXT_COLOR),
+                Node {
+                    margin: UiRect::bottom(Val::Px(24.0)),
+                    ..default()
+                },
+            ),
+            button(MenuButton::Play, "New Game"),
+            button(MenuButton::Quit, "Quit"),
+        ],
+    ));
 }
 
 pub fn despawn_main_menu(mut commands: Commands, query: Query<Entity, With<MainMenu>>) {
-    if let Ok(main_menu_entity) = query.get_single() {
-        commands.entity(main_menu_entity).despawn_recursive();
+    for entity in &query {
+        commands.entity(entity).despawn();
     }
-}
-
-pub fn build_main_menu(commands: &mut Commands, game_assets: Res<GameAssets>) -> Entity {
-    let main_menu_entity = commands
-        .spawn((
-            Node {
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                ..default()
-            },
-            MainMenu {},
-        ))
-        .with_children(|parent| {
-            // Title
-
-            // Play Button
-            parent
-                .spawn((BUTTON_STYLE, PlayButton {}))
-                .with_children(|parent| {
-                    parent.spawn((
-                        Text::new("hello world!"),
-                        TextFont {
-                            // font: font_handle.clone().into(),
-                            font_size: 60.0,
-                            ..Default::default()
-                        },
-                        TextColor(BLUE.into()),
-                        TextLayout::new_with_justify(JustifyText::Center),
-                    ));
-                });
-            // Quit Button
-        })
-        .id();
-
-    main_menu_entity
 }
