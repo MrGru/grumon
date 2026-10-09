@@ -1,16 +1,16 @@
 //! Pause menu: party, inventory, quest journal, save/load, settings.
 
+mod inventory_tab;
+mod party_tab;
+
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     GameState, PlayState,
     asset::GameAssets,
-    content::{
-        Content,
-        defs::{ItemCategory, QuestKind},
-    },
-    hud::realm_text,
+    content::{Content, defs::QuestKind},
+    flow::Story,
     input::MenuInput,
     main_menu::slot_rows,
     save::{self, LoadRequest, SaveRequest, SaveSlot},
@@ -111,7 +111,98 @@ struct PauseMenu {
     tab: usize,
     /// Inside the tab's list (`Some(row)`) or on the tab list.
     inner: Option<usize>,
+    /// A list opened from a row (actions, targets, artifacts…).
+    sub: Option<Sub>,
+    /// Result of the last action, shown under the tab.
+    message: Option<Message>,
     dirty: bool,
+}
+
+/// Second-level lists opened from a tab row.
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum Sub {
+    /// Who to use an item on.
+    UseOn { item: String, cursor: usize },
+    /// Actions for a party member.
+    Member { member: usize, cursor: usize },
+    /// Equip or unequip a member's artifacts.
+    Equip { member: usize, cursor: usize },
+    /// Choose the party formation.
+    Formation { cursor: usize },
+}
+
+impl Sub {
+    fn cursor_mut(&mut self) -> &mut usize {
+        match self {
+            Sub::UseOn { cursor, .. }
+            | Sub::Member { cursor, .. }
+            | Sub::Equip { cursor, .. }
+            | Sub::Formation { cursor } => cursor,
+        }
+    }
+
+    fn len(&self, content: &Content, progress: &Progress) -> usize {
+        match self {
+            Sub::UseOn { .. } => progress.party.len(),
+            Sub::Member { .. } => party_tab::MEMBER_ACTIONS.len(),
+            Sub::Equip { member, .. } => party_tab::artifact_rows(content, progress, *member).len(),
+            Sub::Formation { .. } => party_tab::formation_rows(progress).len(),
+        }
+    }
+
+    /// Where Esc goes: the artifact list returns to the member's actions.
+    fn back(&self) -> Option<Sub> {
+        match self {
+            Sub::Equip { member, .. } => Some(Sub::Member {
+                member: *member,
+                cursor: party_tab::MEMBER_ACTIONS.len() - 1,
+            }),
+            _ => None,
+        }
+    }
+}
+
+/// A locale key with parameters; errors are drawn in red.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Message {
+    key: &'static str,
+    params: Vec<(&'static str, String)>,
+    error: bool,
+}
+
+impl Message {
+    fn ok(key: &'static str, params: Vec<(&'static str, String)>) -> Self {
+        Self {
+            key,
+            params,
+            error: false,
+        }
+    }
+
+    fn error(key: &'static str, params: Vec<(&'static str, String)>) -> Self {
+        Self {
+            key,
+            params,
+            error: true,
+        }
+    }
+}
+
+/// Spawns lines into the detail panel.
+struct Detail<'a, 'w, 's> {
+    commands: &'a mut Commands<'w, 's>,
+    panel: Entity,
+    assets: &'a GameAssets,
+}
+
+impl Detail<'_, '_, '_> {
+    fn line(&mut self, text: String, color: Color, size: f32) {
+        self.commands.entity(self.panel).with_child((
+            Text::new(text),
+            ui::font(self.assets, FontKind::Body, size),
+            TextColor(color),
+        ));
+    }
 }
 
 #[derive(Component)]
@@ -151,6 +242,8 @@ fn spawn_pause(mut commands: Commands, assets: Res<GameAssets>, content: Res<Con
     commands.insert_resource(PauseMenu {
         tab: 0,
         inner: None,
+        sub: None,
+        message: None,
         dirty: true,
     });
     commands.spawn((
@@ -219,25 +312,6 @@ fn despawn_pause(mut commands: Commands, roots: Query<Entity, With<PauseRoot>>) 
     commands.remove_resource::<PauseMenu>();
 }
 
-/// Inventory entries in display order: (id, count).
-fn inventory_entries(content: &Content, progress: &Progress) -> Vec<(String, u32)> {
-    let order = |id: &str| {
-        content.db.items.get(id).map_or(9, |d| match d.category {
-            ItemCategory::Medicine => 0,
-            ItemCategory::Material => 1,
-            ItemCategory::Artifact => 2,
-            ItemCategory::Quest => 3,
-        })
-    };
-    let mut entries: Vec<(String, u32)> = progress
-        .items
-        .iter()
-        .map(|(k, v)| (k.clone(), *v))
-        .collect();
-    entries.sort_by_key(|(id, _)| (order(id), id.clone()));
-    entries
-}
-
 /// Quests in journal order: active first (main before side), then finished.
 fn journal_entries(content: &Content, progress: &Progress) -> Vec<String> {
     let mut quests: Vec<&String> = progress.quest_order.iter().collect();
@@ -255,8 +329,8 @@ fn journal_entries(content: &Content, progress: &Progress) -> Vec<String> {
 
 fn inner_len(tab: Tab, content: &Content, progress: &Progress) -> usize {
     match tab {
-        Tab::Party => progress.party.len(),
-        Tab::Inventory => inventory_entries(content, progress).len(),
+        Tab::Party => party_tab::len(progress),
+        Tab::Inventory => inventory_tab::entries(content, progress).len(),
         Tab::Journal => journal_entries(content, progress).len(),
         Tab::Save => save::MANUAL_SLOTS as usize,
         Tab::Load => SaveSlot::all().len(),
@@ -269,8 +343,7 @@ fn inner_len(tab: Tab, content: &Content, progress: &Progress) -> usize {
 fn pause_input(
     mut input: ResMut<MenuInput>,
     mut menu: ResMut<PauseMenu>,
-    content: Res<Content>,
-    progress: Res<Progress>,
+    mut story: Story,
     mut settings: ResMut<Settings>,
     items: Query<(&Interaction, &MenuItem), Changed<Interaction>>,
     mut next_play: ResMut<NextState<PlayState>>,
@@ -281,6 +354,33 @@ fn pause_input(
 ) {
     let tab = TABS[menu.tab];
     let (_, clicked) = ui::mouse_menu(&items);
+    if let Some(mut sub) = menu.sub.clone() {
+        if input.cancel || input.left || input.menu {
+            input.consumed = true;
+            menu.sub = sub.back();
+            menu.message = None;
+            menu.dirty = true;
+            return;
+        }
+        let n = sub.len(&story.content, &story.progress).max(1);
+        let step = input.vertical();
+        if step != 0 {
+            let cursor = sub.cursor_mut();
+            *cursor = (*cursor as i32 + step).rem_euclid(n as i32) as usize;
+            menu.sub = Some(sub);
+            menu.message = None;
+            menu.dirty = true;
+        }
+        if input.take_confirm() {
+            match tab {
+                Tab::Inventory => inventory_tab::confirm_use_on(&mut menu, &mut story),
+                Tab::Party => party_tab::confirm(&mut menu, &mut story),
+                _ => {}
+            }
+        }
+        return;
+    }
+    let (content, progress) = (&*story.content, &*story.progress);
     match menu.inner {
         None => {
             if input.menu || input.cancel {
@@ -304,7 +404,7 @@ fn pause_input(
                     Tab::Quit => {
                         exit.write(AppExit::Success);
                     }
-                    _ if inner_len(tab, &content, &progress) > 0 => {
+                    _ if inner_len(tab, content, progress) > 0 => {
                         menu.inner = Some(0);
                     }
                     _ => {}
@@ -336,14 +436,20 @@ fn pause_input(
                 menu.dirty = true;
                 return;
             }
-            let n = inner_len(tab, &content, &progress).max(1);
+            let n = inner_len(tab, content, progress).max(1);
             let step = input.vertical();
             if step != 0 {
                 menu.inner = Some((row as i32 + step).rem_euclid(n as i32) as usize);
+                menu.message = None;
                 menu.dirty = true;
             }
             if input.take_confirm() {
                 match tab {
+                    Tab::Party => {
+                        party_tab::activate(&mut menu, progress, row);
+                        menu.dirty = true;
+                    }
+                    Tab::Inventory => inventory_tab::activate(&mut menu, &mut story, row),
                     Tab::Save => {
                         saves.write(SaveRequest(SaveSlot::Manual(row as u8 + 1)));
                         menu.dirty = true;
@@ -423,157 +529,35 @@ fn redraw_pause(
     };
     let cursor = menu.inner.unwrap_or(usize::MAX);
     heading(&mut commands, content.ui(tab.key()));
+    if let Some(message) = &menu.message {
+        let params: Vec<(&str, String)> = message
+            .params
+            .iter()
+            .map(|(k, v)| (*k, v.clone()))
+            .collect();
+        line(
+            &mut commands,
+            content.format(message.key, &progress, &params),
+            if message.error { ui::DANGER } else { ui::JADE },
+            16.0,
+        );
+    }
     match tab {
         Tab::Party => {
-            for (i, member) in progress.party.iter().enumerate() {
-                let Some(def) = content.db.characters.get(&member.id) else {
-                    continue;
-                };
-                let stats = member.stats(def);
-                let selected = i == cursor || progress.party.len() == 1;
-                let name = content.character_name(&member.id, &progress);
-                line(
-                    &mut commands,
-                    format!(
-                        "{} {name} — {} · {}",
-                        if i == cursor { "›" } else { " " },
-                        realm_text(&content, &progress, member.realm, member.stage),
-                        content.text(def.element.key(), &progress)
-                    ),
-                    if selected { ui::GOLD } else { ui::TEXT },
-                    19.0,
-                );
-                if selected {
-                    line(
-                        &mut commands,
-                        content.format(
-                            "ui.party.stats",
-                            &progress,
-                            &[
-                                ("hp", stats.hp.to_string()),
-                                ("ll", stats.ll.to_string()),
-                                ("atk", stats.atk.to_string()),
-                                ("spi", stats.spi.to_string()),
-                                ("def", stats.def.to_string()),
-                                ("tp", stats.tp.to_string()),
-                            ],
-                        ),
-                        ui::TEXT,
-                        16.0,
-                    );
-                    let skills: Vec<String> = member
-                        .skills
-                        .iter()
-                        .map(|s| content.text(&format!("skill.{s}.name"), &progress))
-                        .collect();
-                    line(
-                        &mut commands,
-                        content.format(
-                            "ui.party.skills",
-                            &progress,
-                            &[("list", skills.join(", "))],
-                        ),
-                        ui::TEXT_DIM,
-                        16.0,
-                    );
-                    let artifacts: Vec<String> = member
-                        .artifacts
-                        .iter()
-                        .map(|a| content.text(&format!("artifact.{a}.name"), &progress))
-                        .collect();
-                    let list = if artifacts.is_empty() {
-                        content.text("ui.common.none", &progress)
-                    } else {
-                        artifacts.join(", ")
-                    };
-                    line(
-                        &mut commands,
-                        content.format(
-                            "ui.party.artifacts",
-                            &progress,
-                            &[
-                                ("list", list),
-                                ("slots", member.realm.artifact_slots().to_string()),
-                            ],
-                        ),
-                        ui::TEXT_DIM,
-                        16.0,
-                    );
-                    if member.id == crate::story::PLAYER_ID
-                        && member.realm != crate::content::defs::Realm::PhamNhan
-                    {
-                        let thresholds = crate::story::stage_thresholds(member.realm);
-                        let next = thresholds.get(member.stage as usize).copied();
-                        let text = match next {
-                            Some(n) => content.format(
-                                "ui.party.tu_vi",
-                                &progress,
-                                &[("now", member.tu_vi.to_string()), ("next", n.to_string())],
-                            ),
-                            None => content.text("ui.party.tu_vi_peak", &progress),
-                        };
-                        line(&mut commands, text, ui::JADE, 16.0);
-                    }
-                }
-            }
-            line(
-                &mut commands,
-                content.format(
-                    "ui.party.money",
-                    &progress,
-                    &[("count", progress.money.to_string())],
-                ),
-                ui::TEXT,
-                16.0,
-            );
+            let mut d = Detail {
+                commands: &mut commands,
+                panel: detail,
+                assets: &assets,
+            };
+            party_tab::draw(&mut d, &content, &progress, &menu);
         }
         Tab::Inventory => {
-            let entries = inventory_entries(&content, &progress);
-            if entries.is_empty() {
-                line(
-                    &mut commands,
-                    content.text("ui.inventory.empty", &progress),
-                    ui::TEXT_DIM,
-                    17.0,
-                );
-            }
-            for (i, (id, count)) in entries.iter().enumerate() {
-                let def = content.db.items.get(id);
-                let name = if content.db.artifacts.contains_key(id) {
-                    content.text(&format!("artifact.{id}.name"), &progress)
-                } else {
-                    content.text(&format!("item.{id}.name"), &progress)
-                };
-                let category = def
-                    .map(|d| content.text(d.category.key(), &progress))
-                    .unwrap_or_default();
-                let selected = i == cursor;
-                line(
-                    &mut commands,
-                    format!(
-                        "{} {name} ×{count}  · {category}",
-                        if selected { "›" } else { " " }
-                    ),
-                    if selected { ui::GOLD } else { ui::TEXT },
-                    18.0,
-                );
-                if selected {
-                    let desc = if content.db.artifacts.contains_key(id) {
-                        content.text(&format!("artifact.{id}.desc"), &progress)
-                    } else {
-                        content.text(&format!("item.{id}.desc"), &progress)
-                    };
-                    line(&mut commands, desc, ui::TEXT_DIM, 16.0);
-                    if def.is_some_and(|d| !d.battle_use.is_empty()) {
-                        line(
-                            &mut commands,
-                            content.text("ui.inventory.battle_use", &progress),
-                            ui::JADE,
-                            15.0,
-                        );
-                    }
-                }
-            }
+            let mut d = Detail {
+                commands: &mut commands,
+                panel: detail,
+                assets: &assets,
+            };
+            inventory_tab::draw(&mut d, &content, &progress, &menu);
         }
         Tab::Journal => {
             let quests = journal_entries(&content, &progress);

@@ -105,6 +105,7 @@ pub enum Deferred {
 pub enum Notice {
     ItemGained(String, u32),
     ItemLost(String, u32),
+    ItemUsed(String),
     Money(i64),
     QuestStarted(String),
     QuestDone(String),
@@ -115,6 +116,8 @@ pub enum Notice {
     ArtifactGained(String),
     TuVi(u32),
     StageUp(String, Realm, u8),
+    Breakthrough(String, Realm),
+    FormationLearned(String),
     Custom(String),
 }
 
@@ -153,6 +156,9 @@ pub struct Progress {
     /// Story music overriding the map's track (`StoryEffect::Music`).
     #[serde(default)]
     pub music: Option<String>,
+    /// Formations the party can choose in the pause menu.
+    #[serde(default)]
+    pub formations_known: Vec<String>,
 }
 
 impl Default for Progress {
@@ -173,6 +179,7 @@ impl Default for Progress {
             play_time: 0.0,
             battles_fought: 0,
             music: None,
+            formations_known: Vec::new(),
         }
     }
 }
@@ -245,7 +252,7 @@ impl Progress {
         condition.as_ref().is_none_or(|c| self.eval(c))
     }
 
-    fn add_item(&mut self, id: &str, n: u32) {
+    pub(crate) fn add_item(&mut self, id: &str, n: u32) {
         *self.items.entry(id.to_string()).or_insert(0) += n;
     }
 
@@ -265,22 +272,32 @@ impl Progress {
     /// Adds tu vi to every party member and advances minor stages.
     pub fn gain_tu_vi(&mut self, amount: u32) -> Vec<Notice> {
         let mut notices = vec![Notice::TuVi(amount)];
-        for member in &mut self.party {
-            if member.realm == Realm::PhamNhan {
-                continue;
-            }
-            member.tu_vi += amount;
-            let thresholds = stage_thresholds(member.realm);
-            while (member.stage as usize) < thresholds.len()
-                && member.tu_vi >= thresholds[member.stage as usize]
-            {
-                member.stage += 1;
-                notices.push(Notice::StageUp(
-                    member.id.clone(),
-                    member.realm,
-                    member.stage,
-                ));
-            }
+        for i in 0..self.party.len() {
+            notices.extend(self.member_tu_vi(i, amount));
+        }
+        notices
+    }
+
+    /// Tu vi for one member; returns the stage-up notices.
+    pub fn member_tu_vi(&mut self, index: usize, amount: u32) -> Vec<Notice> {
+        let mut notices = Vec::new();
+        let Some(member) = self.party.get_mut(index) else {
+            return notices;
+        };
+        if member.realm == Realm::PhamNhan {
+            return notices;
+        }
+        member.tu_vi += amount;
+        let thresholds = stage_thresholds(member.realm);
+        while (member.stage as usize) < thresholds.len()
+            && member.tu_vi >= thresholds[member.stage as usize]
+        {
+            member.stage += 1;
+            notices.push(Notice::StageUp(
+                member.id.clone(),
+                member.realm,
+                member.stage,
+            ));
         }
         notices
     }
@@ -401,6 +418,12 @@ impl Progress {
             StoryEffect::TimeOfDay(time) => self.time = *time,
             StoryEffect::Notify(key) => out.notices.push(Notice::Custom(key.clone())),
             StoryEffect::SetFormation(id) => self.formation = id.clone(),
+            StoryEffect::LearnFormation(id) => {
+                if !self.formations_known.contains(id) {
+                    self.formations_known.push(id.clone());
+                    out.notices.push(Notice::FormationLearned(id.clone()));
+                }
+            }
             StoryEffect::SetChapter(n) => self.chapter = *n,
             StoryEffect::Music(track) => {
                 self.music = (!track.is_empty()).then(|| track.clone());

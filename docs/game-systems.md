@@ -447,7 +447,7 @@ Rules settled during balancing:
 
 | Realm | ID | Stages | Tu vi per stage | Artifact slots | Story gate to enter |
 |-------|----|--------|-----------------|----------------|---------------------|
-| **Phàm Nhân** | `pham_nhan` | – | – | 0 | – |
+| **Phàm Nhân** | `pham_nhan` | – | – | 1 | – |
 | **Luyện Khí** | `luyen_khi` | Sơ kỳ / Trung kỳ / Hậu kỳ / Đỉnh phong | 60 / 120 / 200 | 1 | Ch1 Miếu Sơn Thần |
 | **Trúc Cơ** | `truc_co` | 4 | 300 / 450 / 600 | 2 | Ch3 bí cảnh + Trúc Cơ Đan |
 | **Kết Đan** | `ket_dan` | 4 | 800 / 1000 / 1300 | 3 | Ch5 Nghịch Kiếp |
@@ -458,12 +458,25 @@ Tu vi is earned from battles (fixed per encounter; repeat fights give 25 %), que
 *Tôi thể* events. Minor stages advance automatically; major realms need a breakthrough event, so
 there is no grinding gate: main-quest tu vi alone reaches every story gate.
 
+**Breakthrough** ✅ (`party.rs`): a member at Đỉnh phong (stage 3) of a realm can enter the next
+realm through a `Breakthrough(realm)` item (e.g. Trúc Cơ Đan, Ch3) or a story `SetRealm`. Tu vi
+restarts at 0 in the new realm; stats grow because `stage_index` grows. Pills (`TuVi(n)`) feed one
+chosen member and are refused for mortals. Phàm Nhân keep one artifact slot so ông Mạc's gourd can
+be carried before the awakening.
+
 ### 9.2 Stat growth
 
 `stat = base + growth * stage_index` where `stage_index` counts every stage reached (Luyện Khí sơ
 kỳ = 1). Per-character base and growth live in `assets/data/core.data.ron` (`characters`). Ch1 cumulative tu vi thresholds: 60 / 180 / 380.
 
-### 9.3 Nghịch Mệnh Quyết
+### 9.3 Party management ✅
+
+Pause menu → Đội ngũ: per member, change the battle row (Tiền / Trung / Hậu; at least one member
+stays in Tiền), move up or down in the party order, and equip or unequip artifacts. The party
+formation is chosen from the formations learned (`LearnFormation`); one whose member or element
+needs are not met is marked and ignored in battle.
+
+### 9.4 Nghịch Mệnh Quyết
 
 - Unlocks Quá Tụ (§4.4, ✅ engine, `stat.tam_ma` recorded after battle) and *Nghịch Lưu* (convert 15 % Khí huyết into 25 Linh lực, 0 AP, once per activation) ⏳.
 - **Tâm Ma** (`stat.tam_ma`) rises with Quá Tụ releases and cruel choices; **Nhân Tâm**

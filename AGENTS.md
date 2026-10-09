@@ -60,7 +60,8 @@ Set `THIEN_MENH_SAVE_DIR` to keep test saves out of your real save directory.
 | `src/character_creation.rs` | Name entry (Telex/IME), addressing, appearance, confirmation |
 | `src/telex.rs` | Built-in Telex input engine |
 | `src/main_menu.rs` | Title screen and load view |
-| `src/pause_menu.rs` | Pause menu tabs (party, inventory, journal, save, load, settings), `Settings` |
+| `src/party.rs` | Party logic on `Progress` (pure): item use outside battle, breakthroughs, equip/unequip, battle rows, order, formation readiness |
+| `src/pause_menu/` | Pause menu: `mod.rs` tabs, submenus and `Settings`; `party_tab.rs` (rows, order, artifacts, formation); `inventory_tab.rs` (bag, item use) |
 | `src/hud.rs` | Notices, quest tracker, map banner, controls hint, chapter/story cards |
 | `src/screen_fx.rs` | Time-of-day tint, raid rain, `fx.blackout` overlay |
 | `src/audio.rs` | Music selection and cross-fades (`LevelDef`, encounter `music`, `StoryEffect::Music`), the `Sfx` message and `sound` IDs |

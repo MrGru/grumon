@@ -61,7 +61,7 @@ is the original Grumon placeholder.
 | Save/load across a chapter transition | [ ] | There is only one chapter so far |
 | Audio (music + SFX) | [~] | 8 generated loops and 17 sound effects (`tools/gen_audio.py`), data-driven music per map/time/battle/story, volume settings. Verified in game through logs with a null audio device (`audio::tests`, music log); **not yet listened to by a human** |
 | Visual presentation: portraits, xianxia tileset, battle VFX | [ ] | Generated placeholder art only |
-| Item use outside battle (pause menu) | [ ] | Items can only be used in battle |
+| Item use outside battle (pause menu) | [x] | `party::tests::*`, playthrough uses the Tụ Khí Đan from ông Mạc's jar; in-game: pill used from Túi đồ, tu vi 0 → 40. Healing items stay battle-only because every battle starts at full Khí huyết (game-systems §8.6) |
 
 Acceptance: a new player finishes Ch1 without help, every in-game save/load case passes, and
 audio and portraits are present.
@@ -77,9 +77,9 @@ audio and portraits are present.
 | Charge techniques | [~] | 3 of 8 (`pha_thach_quyen`, `nghich_menh_chi`, `kiem_phoi_tram`) |
 | Enemy archetypes that react to the systems | [~] | 4 of 6+ in data (assassin, channeller, interrupter, formation breaker) |
 | Three showcase battles, each with two viable approaches, and tests | [x] | `battle::balance_tests::showcase_*` |
-| Breakthrough events (major realms) | [~] | `SetRealm` effect and Ch1 awakening work; no breakthrough scene beyond Luyện Khí yet |
-| Party management UI (order, slots, formation choice) | [ ] | The party tab is view-only |
-| Equipment UI (artifact slots by realm) | [ ] | Equipping is done only through story effects |
+| Breakthrough events (major realms) | [~] | Mechanic done (`Breakthrough` item effect, `party::tests::breakthrough_needs_the_peak`); no breakthrough item or scene exists in content until Ch3 |
+| Party management UI (order, slots, formation choice) | [x] | `party::tests::*`; in-game: row change refused for the last front-row fighter, formation chosen from learned ones. Order swapping is tested in code only (Ch1 has a party of one) |
+| Equipment UI (artifact slots by realm) | [x] | `party::tests::equipping_respects_slots_and_binding`; in-game: gourd unequipped to the bag and re-equipped |
 | Alchemy (Luyện đan), artifact refinement (Luyện khí), shops | [ ] | Designed in game-systems.md §10 |
 | Balanced progression across chapters | [ ] | Only Ch1 is balanced |
 

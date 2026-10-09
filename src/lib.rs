@@ -20,6 +20,7 @@ mod level;
 mod main_menu;
 mod map_events;
 mod npc;
+mod party;
 mod pause_menu;
 mod player;
 pub mod save;

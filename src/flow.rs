@@ -59,6 +59,11 @@ pub struct Story<'w> {
 impl Story<'_> {
     pub fn run(&mut self, effects: &[StoryEffect]) {
         let outcome = self.progress.apply_all(effects, &self.content.db);
+        self.absorb(outcome);
+    }
+
+    /// Queues the deferred actions and shows the notices of an outcome.
+    pub fn absorb(&mut self, outcome: crate::story::Outcome) {
         self.queue
             .0
             .extend(outcome.deferred.into_iter().map(QueuedAction::Deferred));

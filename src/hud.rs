@@ -164,6 +164,9 @@ pub fn notice_text(notice: &Notice, content: &Content, progress: &Progress) -> S
             progress,
             &[("item", item_name(id)), ("count", n.to_string())],
         ),
+        Notice::ItemUsed(id) => {
+            content.format("notice.item_used", progress, &[("item", item_name(id))])
+        }
         Notice::Money(n) if *n >= 0 => {
             content.format("notice.money_gained", progress, &[("count", n.to_string())])
         }
@@ -219,6 +222,22 @@ pub fn notice_text(notice: &Notice, content: &Content, progress: &Progress) -> S
                 ("realm", realm_text(content, progress, *realm, *stage)),
             ],
         ),
+        Notice::Breakthrough(member, realm) => content.format(
+            "notice.breakthrough",
+            progress,
+            &[
+                ("name", content.character_name(member, progress)),
+                ("realm", content.text(realm.key(), progress)),
+            ],
+        ),
+        Notice::FormationLearned(id) => content.format(
+            "notice.formation_learned",
+            progress,
+            &[(
+                "formation",
+                content.text(&format!("formation.{id}.name"), progress),
+            )],
+        ),
         Notice::Custom(key) => content.text(key, progress),
     }
 }
@@ -247,7 +266,11 @@ fn notice_sound(notice: &Notice) -> Option<&'static str> {
             Some(sound::PICKUP)
         }
         Notice::QuestStarted(_) | Notice::QuestDone(_) | Notice::Joined(_) => Some(sound::QUEST),
-        Notice::SkillLearned(..) | Notice::StageUp(..) => Some(sound::FORMATION),
+        Notice::SkillLearned(..)
+        | Notice::StageUp(..)
+        | Notice::Breakthrough(..)
+        | Notice::FormationLearned(_) => Some(sound::FORMATION),
+        Notice::ItemUsed(_) => Some(sound::HEAL),
         Notice::Custom(key) if key.contains("saved") => Some(sound::SAVE),
         Notice::QuestFailed(_) | Notice::ItemLost(..) | Notice::Left(_) => Some(sound::UI_CANCEL),
         _ => None,

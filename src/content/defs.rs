@@ -166,6 +166,18 @@ impl Realm {
         &self.key()["realm.".len()..]
     }
 
+    /// The next major realm.
+    pub fn next(self) -> Option<Realm> {
+        match self {
+            Realm::PhamNhan => Some(Realm::LuyenKhi),
+            Realm::LuyenKhi => Some(Realm::TrucCo),
+            Realm::TrucCo => Some(Realm::KetDan),
+            Realm::KetDan => Some(Realm::NguyenAnh),
+            Realm::NguyenAnh => Some(Realm::HoaThan),
+            Realm::HoaThan => None,
+        }
+    }
+
     /// Number of equipped artifact slots (game-systems §6.1).
     pub fn artifact_slots(self) -> usize {
         match self {
@@ -276,6 +288,28 @@ pub struct ItemDef {
     pub battle_use: Vec<BattleEffect>,
     #[serde(default = "default_item_target")]
     pub target: TargetKind,
+    /// Effects when used from the pause menu. Empty = not usable there.
+    #[serde(default)]
+    pub field_use: Vec<FieldEffect>,
+}
+
+/// Effect of using an item outside battle (pause menu, `party.rs`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum FieldEffect {
+    /// Tu vi for the chosen party member.
+    TuVi(u32),
+    /// The chosen member breaks through to this realm; needs the peak
+    /// (Đỉnh phong) of the realm before it.
+    Breakthrough(Realm),
+    /// A story effect without a target.
+    Story(StoryEffect),
+}
+
+impl FieldEffect {
+    /// Whether the player must pick a party member.
+    pub fn needs_member(&self) -> bool {
+        matches!(self, FieldEffect::TuVi(_) | FieldEffect::Breakthrough(_))
+    }
 }
 
 fn default_item_target() -> TargetKind {
@@ -495,6 +529,9 @@ pub struct ArtifactDef {
     pub charges_per_battle: Option<u8>,
     #[serde(default)]
     pub passives: Vec<ArtifactPassive>,
+    /// Bound to the protagonist (Bản Mệnh): cannot be given to companions.
+    #[serde(default)]
+    pub bound: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -859,6 +896,8 @@ pub enum StoryEffect {
     TimeOfDay(TimeOfDay),
     Notify(String),
     SetFormation(Option<String>),
+    /// The party can now choose this formation in the pause menu.
+    LearnFormation(String),
     SetChapter(u8),
     /// Story music that overrides the map's track; `""` returns to the map music.
     Music(String),

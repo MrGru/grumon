@@ -302,6 +302,9 @@
          when: Some(TimeIs(Dawn)), effects: [Dialogue("ch1_grave")]),
         (id: "ch1_lenh_bai", sheet: Objects, sprite: Some((0, 0, 16, 16)), once: true,
          when: Some(TimeIs(Dawn)), effects: [Dialogue("ch1_token")]),
+        // Ông Mạc's medicine jar survived the fire.
+        (id: "ch1_hu_thuoc", sheet: Objects, sprite: Some((96, 0, 16, 16)), once: true,
+         when: Some(All([TimeIs(Dawn), Flag("ch1.awakened")])), effects: [Dialogue("ch1_hu_thuoc")]),
     ],
 
     triggers: [
@@ -766,6 +769,12 @@
             "t2": Line(next: Some("t3"), effects: [GiveItem("lenh_bai_ngoai_mon", 1), SetFlag("ch1.token_found", 1)]),
             "t3": Line(speaker: Some("ngoc_lao"), next: Some("t4")),
             "t4": Line(speaker: Some("player"), next: None),
+        }),
+        (id: "ch1_hu_thuoc", nodes: {
+            "start": Line(next: Some("h2")),
+            "h2": Line(next: Some("h3"), effects: [GiveItem("tu_khi_dan", 2), GiveItem("thuoc_tri_thuong", 1)]),
+            "h3": Line(speaker: Some("ngoc_lao"), next: Some("h4")),
+            "h4": Line(speaker: Some("ngoc_lao"), next: None),
         }),
         (id: "ch1_farewell", nodes: {
             "start": Line(speaker: Some("ly_duc"), next: Some("f2")),

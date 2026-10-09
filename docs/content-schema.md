@@ -92,11 +92,15 @@ duplicate IDs.
 ### 3.1 Item
 
 ```ron
-(id: "thanh_tam_thao", category: Material, rarity: Common, price: 3,
- use: None)                                   // or Some(Heal(30)), Some(RestoreLl(20)), ...
+(id: "hoi_khi_tan", category: Medicine, rarity: Uncommon, price: 15,
+ battle_use: [RestoreLl(50)], target: Ally),
+(id: "tu_khi_dan", category: Medicine, rarity: Uncommon, price: 40, field_use: [TuVi(40)]),
 ```
 `category`: `Medicine | Material | Artifact | Quest`. `rarity`: `Common | Uncommon | Rare | Epic | Legendary`.
-In battle, `use` effects are `BattleEffect`s (§3.3). Quest items cannot be sold or dropped.
+`battle_use` are `BattleEffect`s (§3.3) with a `target`. `field_use` are used from the pause menu:
+`TuVi(n)` and `Breakthrough(realm)` ask for a party member; `Story(effect)` runs any story effect.
+Refusals (mortal, not at Đỉnh phong, wrong realm…) come from `party.rs` with `reason.party.*` keys.
+Quest items cannot be sold or dropped.
 
 ### 3.2 Skill (technique, also used for artifact actives and enemy attacks)
 
@@ -127,6 +131,9 @@ StunIfChanneling(else_power)                          // Phá Sơn Ấn
  charges_per_battle: Some(2), passives: [StoreLl(30)])
 ```
 Passives: `StoreLl(cap)`, `LlRegen(n)`, `SpeedBonus(n)`, `ShieldToEnergy`, `BossResistance`, `Overheat`.
+`bound: true` marks a Bản Mệnh artifact that only the protagonist can equip. Unequipped artifacts
+live in the bag (`Progress.items`); the party tab moves them between the bag and members, limited
+by the realm's slots.
 
 ### 3.5 Formation
 
@@ -221,7 +228,7 @@ Dialogue(id)   Battle(encounter_id)   Warp(level, x, y)   Card(chapter_key)
 JoinParty(id)  LeaveParty(id)  LearnSkill(member, skill)  GiveArtifact(member, artifact)
 Trust(character, n)   GainTuVi(n)   SetRealm(realm, stage)   SetFormation(Some(id)|None)
 HealParty   Autosave   TimeOfDay(Day|Dusk|Night|Raid|Dawn)   Notify(key)   SetChapter(n)
-Music(track | "")
+Music(track | "")   LearnFormation(id)
 ```
 `Dialogue`, `Battle`, `Warp` and `Card` are *queued* and start after the current dialogue closes.
 

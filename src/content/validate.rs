@@ -206,7 +206,7 @@ impl Checker<'_> {
                         self.need_key(format!("char.{character}.name"), ctx);
                     }
                 }
-                StoryEffect::SetFormation(Some(id)) => {
+                StoryEffect::SetFormation(Some(id)) | StoryEffect::LearnFormation(id) => {
                     if !self.db.formations.contains_key(id) {
                         self.err(format!("{ctx}: unknown formation `{id}`"));
                     }

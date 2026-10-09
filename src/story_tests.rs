@@ -301,6 +301,13 @@ fn chapter_1_full_playthrough_with_side_quests() {
     s.talk("ly_duc_dawn");
     s.use_object("ch1_mo_ong_mac");
     s.use_object("ch1_lenh_bai");
+    // Ông Mạc's medicine jar: two Tụ Khí Đan, used from the pause menu.
+    s.use_object("ch1_hu_thuoc");
+    assert_eq!(s.p.items.get("tu_khi_dan"), Some(&2));
+    let before = s.p.party[0].tu_vi;
+    s.p.use_item(&s.db, "tu_khi_dan", Some(0))
+        .expect("pill usable");
+    assert_eq!(s.p.party[0].tu_vi, before + 40);
     s.talk("ly_duc_dawn");
     assert_eq!(s.p.flag("ch1.complete"), 1);
     assert!(s.cards.contains(&"ch1_end".to_string()));
@@ -387,7 +394,7 @@ fn raid_blocks_leaving_the_village_until_the_battle() {
 }
 
 /// Writes saves that start inside Ch1 battles (quick: boar, slot 1: raid,
-/// slot 2: Lang Nha), for
+/// slot 2: Lang Nha) and at dawn (slot 3), for
 /// checking them in the running game:
 /// `QA_SAVE_DIR=/tmp/qa cargo test export_qa_saves -- --ignored`, then run the
 /// game with `THIEN_MENH_SAVE_DIR=/tmp/qa` and load a slot.
@@ -437,4 +444,16 @@ fn export_qa_saves() {
         )
         .expect("write save");
     }
+    // Slot 3: dawn in the village after the last battle, for the pause menu
+    // (pill in the jar, party tab). Knows a formation only to show its row.
+    let mut dawn = s.p.clone();
+    assert_eq!(dawn.level, "Village");
+    dawn.feet = (262, 214);
+    dawn.formations_known.push("ho_tam_tran".into());
+    write_save(
+        Path::new(&dir),
+        SaveSlot::Manual(3),
+        &SaveFile::new(&dawn, None, None),
+    )
+    .expect("write save");
 }

@@ -13,6 +13,8 @@
          battle_use: [HealPct(45), Cleanse], target: Ally),
         (id: "hoi_khi_tan", category: Medicine, rarity: Uncommon, price: 15,
          battle_use: [RestoreLl(50)], target: Ally),
+        // Cultivation pills: used from the pause menu.
+        (id: "tu_khi_dan", category: Medicine, rarity: Uncommon, price: 40, field_use: [TuVi(40)]),
         // --- Materials ---
         (id: "thanh_tam_thao", category: Material, rarity: Common, price: 3),
         (id: "linh_lang_nanh", category: Material, rarity: Uncommon, price: 10),
