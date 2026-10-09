@@ -5,6 +5,7 @@
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 
+use crate::audio::{Sfx, sound};
 use crate::{
     GameState, PlayState,
     collision::{Collider, overlaps},
@@ -99,6 +100,7 @@ fn check_warps(
     player: Query<(&Transform, &Collider), With<Player>>,
     warps: Query<(&Warp, &GlobalTransform)>,
     mut next_state: ResMut<NextState<PlayState>>,
+    mut sfx: MessageWriter<Sfx>,
 ) {
     let Ok((transform, collider)) = player.single() else {
         return;
@@ -111,6 +113,7 @@ fn check_warps(
         return;
     };
     info!("warping to {} at {}", warp.to_level, warp.to);
+    sfx.write(Sfx(sound::WARP));
     commands.insert_resource(PendingWarp::to(&warp.to_level, warp.to));
     next_state.set(PlayState::Transition);
 }

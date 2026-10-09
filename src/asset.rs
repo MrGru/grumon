@@ -39,6 +39,12 @@ pub struct GameAssets {
     /// Dedicated enemy sprites, keyed by path (`gfx/enemies/<id>.png`).
     #[asset(path = "gfx/enemies", collection(typed, mapped))]
     pub enemy_sprites: HashMap<String, Handle<Image>>,
+    /// Music loops, keyed by path (`audio/music/<id>.ogg`).
+    #[asset(path = "audio/music", collection(typed, mapped))]
+    pub music: HashMap<String, Handle<AudioSource>>,
+    /// Sound effects, keyed by path (`audio/sfx/<id>.ogg`).
+    #[asset(path = "audio/sfx", collection(typed, mapped))]
+    pub sfx: HashMap<String, Handle<AudioSource>>,
     #[asset(path = "gfx/ui/title.png")]
     pub title_background: Handle<Image>,
     /// Body and UI text (Vietnamese coverage).
@@ -77,6 +83,14 @@ impl GameAssets {
         self.battle_backgrounds
             .get(&format!("gfx/battle/{id}.png"))
             .cloned()
+    }
+
+    pub fn music_track(&self, id: &str) -> Option<Handle<AudioSource>> {
+        self.music.get(&format!("audio/music/{id}.ogg")).cloned()
+    }
+
+    pub fn sound(&self, id: &str) -> Option<Handle<AudioSource>> {
+        self.sfx.get(&format!("audio/sfx/{id}.ogg")).cloned()
     }
 
     pub fn enemy_sprite(&self, path: &str) -> Option<Handle<Image>> {

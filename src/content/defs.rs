@@ -25,6 +25,20 @@ pub struct DataFile {
     pub triggers: Vec<TriggerDef>,
     pub objects: Vec<ObjectDef>,
     pub chapters: Vec<ChapterDef>,
+    pub levels: Vec<LevelDef>,
+}
+
+/// Per-map settings that are not part of the LDtk layout.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LevelDef {
+    /// LDtk level identifier.
+    pub id: String,
+    /// Music track (`assets/audio/music/<id>.ogg`) while exploring.
+    pub music: String,
+    /// Track overrides by time of day.
+    #[serde(default)]
+    pub music_by_time: BTreeMap<TimeOfDay, String>,
 }
 
 // ---------------------------------------------------------------------------
@@ -163,7 +177,9 @@ impl Realm {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize,
+)]
 pub enum TimeOfDay {
     #[default]
     Day,
@@ -664,6 +680,9 @@ pub struct EncounterDef {
     /// Locale keys of hints shown in the battle hint panel.
     #[serde(default)]
     pub hints: Vec<String>,
+    /// Music track; `boss` when any enemy is a boss, `battle` otherwise.
+    #[serde(default)]
+    pub music: Option<String>,
 }
 
 // ---------------------------------------------------------------------------
@@ -841,6 +860,8 @@ pub enum StoryEffect {
     Notify(String),
     SetFormation(Option<String>),
     SetChapter(u8),
+    /// Story music that overrides the map's track; `""` returns to the map music.
+    Music(String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

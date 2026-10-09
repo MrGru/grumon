@@ -3,6 +3,7 @@
 
 use bevy::prelude::*;
 
+use crate::audio::{Sfx, sound};
 use crate::{
     GameState, PlayState,
     asset::GameAssets,
@@ -240,6 +241,19 @@ pub fn realm_text(
     }
 }
 
+fn notice_sound(notice: &Notice) -> Option<&'static str> {
+    match notice {
+        Notice::ItemGained(..) | Notice::ArtifactGained(_) | Notice::Money(_) => {
+            Some(sound::PICKUP)
+        }
+        Notice::QuestStarted(_) | Notice::QuestDone(_) | Notice::Joined(_) => Some(sound::QUEST),
+        Notice::SkillLearned(..) | Notice::StageUp(..) => Some(sound::FORMATION),
+        Notice::Custom(key) if key.contains("saved") => Some(sound::SAVE),
+        Notice::QuestFailed(_) | Notice::ItemLost(..) | Notice::Left(_) => Some(sound::UI_CANCEL),
+        _ => None,
+    }
+}
+
 fn show_notices(
     mut commands: Commands,
     assets: Res<GameAssets>,
@@ -247,6 +261,7 @@ fn show_notices(
     progress: Option<Res<Progress>>,
     mut notices: ResMut<Notices>,
     list: Query<Entity, With<NoticeList>>,
+    mut sfx: MessageWriter<Sfx>,
 ) {
     let (Some(progress), Ok(list)) = (progress, list.single()) else {
         return;
@@ -259,6 +274,9 @@ fn show_notices(
                 .is_some_and(|p| p.realm == crate::content::defs::Realm::PhamNhan)
         {
             continue;
+        }
+        if let Some(sound) = notice_sound(&notice) {
+            sfx.write(Sfx(sound));
         }
         let text = notice_text(&notice, &content, &progress);
         commands.entity(list).with_child((

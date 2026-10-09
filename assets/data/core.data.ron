@@ -120,4 +120,13 @@
          base: (hp: 230, ll: 90, atk: 12, spi: 26, def: 14, tp: 34),
          skills: ["thanh_moc_cham", "duong_sinh_quyet"], artifacts: ["huyen_quy_thuan"]),
     ],
+
+    // Map music; `music_by_time` overrides it for a time of day.
+    levels: [
+        (id: "Village", music: "village",
+         music_by_time: {Night: "night", Raid: "raid", Dawn: "sorrow"}),
+        (id: "Forest", music: "forest", music_by_time: {Night: "night", Raid: "night", Dawn: "sorrow"}),
+        (id: "Snowfield", music: "forest", music_by_time: {Night: "night", Raid: "night", Dawn: "sorrow"}),
+        (id: "Beach", music: "village", music_by_time: {Night: "night", Raid: "night", Dawn: "sorrow"}),
+    ],
 )

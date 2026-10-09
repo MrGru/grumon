@@ -35,6 +35,7 @@ cargo clippy --all-targets     # lint; keep it warning-free
 cargo fmt                      # format before committing
 cargo build --release          # size-optimized release build
 python3 tools/gen_art.py       # regenerate generated art (needs Pillow)
+python3 tools/gen_audio.py     # regenerate music and sound effects (needs numpy and ffmpeg)
 python3 tools/build_ch1_map.py # re-place Chapter 1 entities in world.ldtk (idempotent)
 ```
 
@@ -62,6 +63,7 @@ Set `THIEN_MENH_SAVE_DIR` to keep test saves out of your real save directory.
 | `src/pause_menu.rs` | Pause menu tabs (party, inventory, journal, save, load, settings), `Settings` |
 | `src/hud.rs` | Notices, quest tracker, map banner, controls hint, chapter/story cards |
 | `src/screen_fx.rs` | Time-of-day tint, raid rain, `fx.blackout` overlay |
+| `src/audio.rs` | Music selection and cross-fades (`LevelDef`, encounter `music`, `StoryEffect::Music`), the `Sfx` message and `sound` IDs |
 | `src/ui.rs` | Palette, fonts, panels, menu rows (shared UI helpers) |
 | `src/input.rs` | `MenuInput`: keyboard + gamepad mapped to actions |
 | `src/level.rs` | LDtk world, `LevelInfo` (wall grid), props (trees, houses), `Warp` entities |
@@ -75,7 +77,7 @@ Set `THIEN_MENH_SAVE_DIR` to keep test saves out of your real save directory.
 | `src/animation.rs` | Sprite-sheet animation, `Facing` |
 | `src/story_tests.rs` | Scripted Chapter 1 playthroughs (test only) |
 | `src/debug.rs` | Debug builds only: F1 inspector, F2 collision gizmos |
-| `tools/` | `build_ch1_map.py` (LDtk placements), `gen_art.py` (art generator) |
+| `tools/` | `build_ch1_map.py` (LDtk placements), `gen_art.py` (art generator), `gen_audio.py` (music and sound generator) |
 
 ## State machine
 

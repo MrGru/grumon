@@ -150,6 +150,9 @@ pub struct Progress {
     pub feet: (i32, i32),
     pub play_time: f64,
     pub battles_fought: u32,
+    /// Story music overriding the map's track (`StoryEffect::Music`).
+    #[serde(default)]
+    pub music: Option<String>,
 }
 
 impl Default for Progress {
@@ -169,6 +172,7 @@ impl Default for Progress {
             feet: (0, 0),
             play_time: 0.0,
             battles_fought: 0,
+            music: None,
         }
     }
 }
@@ -398,6 +402,9 @@ impl Progress {
             StoryEffect::Notify(key) => out.notices.push(Notice::Custom(key.clone())),
             StoryEffect::SetFormation(id) => self.formation = id.clone(),
             StoryEffect::SetChapter(n) => self.chapter = *n,
+            StoryEffect::Music(track) => {
+                self.music = (!track.is_empty()).then(|| track.clone());
+            }
         }
         out
     }

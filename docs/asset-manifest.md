@@ -38,19 +38,41 @@ Vietnamese glyphs, so it was removed.
 
 Regenerate with `python3 tools/gen_art.py` from the repository root.
 
-## 3. Data (not art, listed for completeness)
+## 3. Audio
+
+All audio is **Generated** by `tools/gen_audio.py`: synthesised from scratch with numpy (no
+samples, no external recordings), fixed seeds, encoded to OGG Vorbis with ffmpeg. Instruments are
+modelled on Vietnamese/xianxia colours: đàn tranh (plucked zither with bends), sáo trúc (breathy
+bamboo flute), trống (drums), mõ (wood block), cồng chiêng (gong), on pentatonic and *hơi oán*
+modes.
+
+| File(s) | Use |
+|---------|-----|
+| `audio/music/title.ogg` | Title screen, character creation, the shrine awakening |
+| `audio/music/village.ogg` | Thanh Khê thôn by day, the beach |
+| `audio/music/forest.ogg` | Forest and Snowfield by day |
+| `audio/music/night.ogg` | Every map at night, the flight through the forest |
+| `audio/music/raid.ogg` | The village during the raid, the night-raid battle |
+| `audio/music/sorrow.ogg` | Ông Mạc's death, dawn after the massacre |
+| `audio/music/battle.ogg`, `boss.ogg` | Normal battles; battles with a boss enemy |
+| `audio/sfx/*.ogg` | Menu move/confirm/cancel, dialogue blip, hits, heavy hits, heal, shield, Tụ khí, interrupt, formation gong, pickup, quest, save, warp, victory and defeat jingles |
+
+Which track plays is data: `levels` in `data/core.data.ron` (per map and time of day), `music` on
+an encounter, and the `Music` story effect. The tracks were checked by spectrogram and level
+analysis only; **no human has listened to them yet**, so treat them as placeholders until reviewed.
+
+## 4. Data (not art, listed for completeness)
 
 `world.ldtk` (maps, placements written partly by `tools/build_ch1_map.py`), `data/*.data.ron`
 (game content), `locale/vi-VN/*.locale.ron` (all player-facing text). All original to the project.
 
-## 4. Missing assets (honest gaps)
+## 5. Missing assets (honest gaps)
 
 These are required by the design (game-design.md §7–8) and **do not exist yet**:
 
 | Need | Notes | Priority |
 |------|-------|----------|
-| **Audio: music** | Village day, raid, forest night, battle, boss, title. The game is currently silent | High (Milestone 2) |
-| **Audio: SFX** | Menu move/confirm/cancel, typewriter blip, hits, charge stages, interrupt, formation phase, footsteps | High |
+| **Audio review / recorded music** | The generated tracks need a listening pass, ideally replaced or refined by a composer. Footsteps and ambience (rain, fire, wind) are missing | Medium |
 | **Dialogue portraits** | Protagonist (4 appearances × 2 expressions), ông Mạc, Tô Thanh Liên, Đồ Cuồng, Lang Nha at least | High |
 | **Xianxia tileset** | The Repo tileset is a generic western village. Needs a Vietnamese/xianxia village (bamboo, tiled roofs, shrine, rice fields) | Medium |
 | **Humanoid battle sprites** | Hắc Y, Đồ Cuồng and Lang Nha currently reuse tinted overworld sheets | Medium |

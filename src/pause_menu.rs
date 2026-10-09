@@ -19,11 +19,28 @@ use crate::{
 };
 
 /// Player preferences, stored next to the saves.
-#[derive(Resource, Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[derive(Resource, Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
 pub struct Settings {
     /// Faster enemy turns and animations in battle.
     pub fast_battle: bool,
+    /// Music volume, `0..=VOLUME_STEPS`.
+    pub music_volume: u8,
+    /// Sound effect volume, `0..=VOLUME_STEPS`.
+    pub sfx_volume: u8,
+}
+
+/// Number of volume steps in the settings menu.
+pub const VOLUME_STEPS: u8 = 10;
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            fast_battle: false,
+            music_volume: 7,
+            sfx_volume: 8,
+        }
+    }
 }
 
 impl Settings {
@@ -243,7 +260,7 @@ fn inner_len(tab: Tab, content: &Content, progress: &Progress) -> usize {
         Tab::Journal => journal_entries(content, progress).len(),
         Tab::Save => save::MANUAL_SLOTS as usize,
         Tab::Load => SaveSlot::all().len(),
-        Tab::Settings => 1,
+        Tab::Settings => 3,
         Tab::Title | Tab::Quit => 0,
     }
 }
@@ -296,6 +313,23 @@ fn pause_input(
             }
         }
         Some(row) => {
+            // Volume rows use left/right to adjust.
+            let adjusting = tab == Tab::Settings && row > 0;
+            if adjusting && (input.left || input.right) {
+                let volume = if row == 1 {
+                    &mut settings.music_volume
+                } else {
+                    &mut settings.sfx_volume
+                };
+                *volume = if input.right {
+                    (*volume + 1).min(VOLUME_STEPS)
+                } else {
+                    volume.saturating_sub(1)
+                };
+                settings.store();
+                menu.dirty = true;
+                return;
+            }
             if input.cancel || input.left || input.menu {
                 input.consumed = true;
                 menu.inner = None;
@@ -318,7 +352,16 @@ fn pause_input(
                         loads.write(LoadRequest(SaveSlot::all()[row]));
                     }
                     Tab::Settings => {
-                        settings.fast_battle = !settings.fast_battle;
+                        match row {
+                            0 => settings.fast_battle = !settings.fast_battle,
+                            1 => {
+                                settings.music_volume =
+                                    (settings.music_volume + 1) % (VOLUME_STEPS + 1)
+                            }
+                            _ => {
+                                settings.sfx_volume = (settings.sfx_volume + 1) % (VOLUME_STEPS + 1)
+                            }
+                        }
                         settings.store();
                         menu.dirty = true;
                     }
@@ -640,11 +683,29 @@ fn redraw_pause(
             } else {
                 content.text("ui.settings.normal", &progress)
             };
-            let rows = vec![Row::new(content.format(
-                "ui.settings.battle_speed",
-                &progress,
-                &[("value", value)],
-            ))];
+            let volume_row = |key: &str, volume: u8| {
+                let bar: String = (0..VOLUME_STEPS)
+                    .map(|i| if i < volume { '•' } else { '·' })
+                    .collect();
+                Row::new(content.format(
+                    key,
+                    &progress,
+                    &[
+                        ("bar", bar),
+                        ("value", volume.to_string()),
+                        ("max", VOLUME_STEPS.to_string()),
+                    ],
+                ))
+            };
+            let rows = vec![
+                Row::new(content.format(
+                    "ui.settings.battle_speed",
+                    &progress,
+                    &[("value", value)],
+                )),
+                volume_row("ui.settings.music", settings.music_volume),
+                volume_row("ui.settings.sfx", settings.sfx_volume),
+            ];
             ui::menu_rows(&mut commands, detail, &assets, &rows, cursor, 18.0);
             line(
                 &mut commands,

@@ -79,6 +79,8 @@ pub struct ExternalRefs {
     pub object_ids: Vec<String>,
     /// Battle background IDs that have an image.
     pub backgrounds: Vec<String>,
+    /// Music track IDs that have a file (`assets/audio/music`).
+    pub music: Vec<String>,
 }
 
 struct Checker<'a> {
@@ -114,6 +116,12 @@ impl Checker<'_> {
     fn skill(&mut self, id: &str, ctx: &str) {
         if !self.db.skills.contains_key(id) {
             self.err(format!("{ctx}: unknown skill `{id}`"));
+        }
+    }
+
+    fn music(&mut self, track: &str, ctx: &str) {
+        if !self.ext.music.is_empty() && !self.ext.music.iter().any(|m| m == track) {
+            self.err(format!("{ctx}: unknown music track `{track}`"));
         }
     }
 
@@ -213,6 +221,11 @@ impl Checker<'_> {
                 | StoryEffect::TimeOfDay(_)
                 | StoryEffect::SetFormation(None)
                 | StoryEffect::SetChapter(_) => {}
+                StoryEffect::Music(track) => {
+                    if !track.is_empty() {
+                        self.music(track, ctx);
+                    }
+                }
             }
         }
     }
@@ -428,6 +441,9 @@ pub fn validate(db: &GameDb, locale: &Locale, ext: &ExternalRefs) -> Vec<String>
         {
             c.err(format!("{ctx}: story objectives should not allow fleeing"));
         }
+        if let Some(track) = &encounter.music {
+            c.music(track, &ctx);
+        }
         if !ext.backgrounds.is_empty() && !ext.backgrounds.contains(&encounter.background) {
             c.err(format!(
                 "{ctx}: unknown background `{}`",
@@ -520,6 +536,21 @@ pub fn validate(db: &GameDb, locale: &Locale, ext: &ExternalRefs) -> Vec<String>
     }
     for level in &ext.levels {
         c.need_key(format!("map.{level}.name"), "LDtk level");
+        if !db.levels.contains_key(level) {
+            c.err(format!(
+                "LDtk level `{level}` has no level definition (music)"
+            ));
+        }
+    }
+    for level in db.levels.values() {
+        let ctx = format!("level `{}`", level.id);
+        if !ext.levels.is_empty() && !ext.levels.contains(&level.id) {
+            c.err(format!("{ctx}: not an LDtk level"));
+        }
+        c.music(&level.music, &ctx);
+        for track in level.music_by_time.values() {
+            c.music(track, &ctx);
+        }
     }
     for id in &ext.npc_ids {
         if !db.npcs.contains_key(id) {

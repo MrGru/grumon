@@ -84,7 +84,7 @@
          hints: ["hint.ch1_hac_y.1"]),
         (id: "ch1_dem_mua", enemies: [("do_cuong", Front), ("hac_y_tay_sai", Middle)],
          guests: [(character: "ong_mac", slot: Front, hp_pct_if: Some(("ch1.saved_dau", 75)))],
-         formation: Some("ho_tam_tran"), objective: FormationPhase(3), protect: ["ong_mac"],
+         formation: Some("ho_tam_tran"), objective: FormationPhase(3), protect: ["ong_mac"], music: Some("raid"),
          background: "village_raid",
          on_victory: [SetFlag("ch1.ong_mac_dead", 1), Dialogue("ch1_ong_mac_death")],
          hints: ["hint.ch1_dem_mua.1", "hint.ch1_dem_mua.2", "hint.ch1_dem_mua.3"]),
@@ -625,7 +625,7 @@
             "r8": Line(speaker: Some("ong_mac"), next: None, effects: [Battle("ch1_dem_mua")]),
         }),
         (id: "ch1_ong_mac_death", nodes: {
-            "start": Line(next: Some("d2")),
+            "start": Line(next: Some("d2"), effects: [Music("sorrow")]),
             "d2": Line(next: Some("d3")),
             "d3": Line(speaker: Some("player"), next: Some("d4")),
             "d4": Line(speaker: Some("ong_mac"), next: Some("d5")),
@@ -647,7 +647,7 @@
             "c1": Line(speaker: Some("ong_mac"), next: Some("d16")),
             "d16": Line(speaker: Some("ong_mac"), next: Some("d17")),
             "d17": Line(next: Some("d18")),
-            "d18": Line(next: None, effects: [Autosave]),
+            "d18": Line(next: None, effects: [Music(""), Autosave]),
         }),
         (id: "ch1_lang_dem_intro", nodes: {
             "start": Line(next: Some("n2")),
@@ -677,7 +677,7 @@
             "awaken": Effects(effects: [Dialogue("ch1_awakening")], next: None),
         }),
         (id: "ch1_awakening", nodes: {
-            "start": Line(next: Some("a2")),
+            "start": Line(next: Some("a2"), effects: [Music("title")]),
             "a2": Line(speaker: Some("player"), next: Some("a3")),
             "a3": Line(next: Some("a4")),
             "a4": Line(speaker: Some("giong_noi"), next: Some("a5")),
@@ -715,7 +715,7 @@
             "a22": Line(speaker: Some("ngoc_lao"), next: Some("a23")),
             "a23": Line(next: Some("a24")),
             "a24": Line(speaker: Some("lang_nha"), next: Some("a25")),
-            "a25": Line(speaker: Some("ngoc_lao"), next: None, effects: [Battle("ch1_lang_nha")]),
+            "a25": Line(speaker: Some("ngoc_lao"), next: None, effects: [Music(""), Battle("ch1_lang_nha")]),
         }),
         (id: "ch1_after_lang_nha", nodes: {
             "start": Line(speaker: Some("lang_nha"), next: Some("n2")),

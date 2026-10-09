@@ -287,6 +287,12 @@ mod tests {
             refs.npc_ids.len() >= 20 && refs.trigger_ids.len() >= 9 && refs.object_ids.len() >= 19
         );
         refs.backgrounds = backgrounds();
+        refs.music = sorted_files(&assets_dir().join("audio/music"), ".ogg")
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|p| p.file_stem().map(|s| s.to_string_lossy().to_string()))
+            .collect();
+        assert!(refs.music.len() >= 8, "music tracks missing");
         errors.extend(validate::validate(&db, &locale, &refs));
         assert!(
             errors.is_empty(),

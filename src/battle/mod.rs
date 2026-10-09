@@ -12,6 +12,7 @@ use std::collections::VecDeque;
 use bevy::prelude::*;
 
 use self::core::{BattleState, Command, Phase, Target, rng::Rng};
+use crate::audio::{Sfx, sound};
 use crate::{
     GameState, PlayState,
     content::defs::{StoryEffect, TargetKind},
@@ -266,13 +267,40 @@ fn advance_battle(
 }
 
 /// Converts new log entries into text lines and floating numbers.
-fn collect_log(mut session: ResMut<BattleSession>, story: Story) {
+/// Sound for a battle log entry.
+fn log_sound(entry: &core::LogEntry, state: &BattleState) -> Option<&'static str> {
+    use core::LogEntry as L;
+    match entry {
+        L::Damage { target, amount, .. } if *amount > 0 => {
+            let max = state.units[*target].stats.hp.max(1);
+            Some(if *amount * 5 >= max {
+                sound::HIT_HEAVY
+            } else {
+                sound::HIT
+            })
+        }
+        L::Damage { .. } | L::Shield { .. } => Some(sound::SHIELD),
+        L::Heal { amount, .. } if *amount > 0 => Some(sound::HEAL),
+        L::Charge { .. } => Some(sound::CHARGE),
+        L::ChargeBroken { .. } | L::ChannelInterrupted { .. } | L::Stunned { .. } => {
+            Some(sound::INTERRUPT)
+        }
+        L::FormationPhase { .. } | L::FormationReleased { .. } => Some(sound::FORMATION),
+        L::Ko { .. } => Some(sound::HIT_HEAVY),
+        _ => None,
+    }
+}
+
+fn collect_log(mut session: ResMut<BattleSession>, story: Story, mut sfx: MessageWriter<Sfx>) {
     if session.log_seen >= session.state.log.len() {
         return;
     }
     let entries: Vec<_> = session.state.log[session.log_seen..].to_vec();
     session.log_seen = session.state.log.len();
     for entry in &entries {
+        if let Some(sound) = log_sound(entry, &session.state) {
+            sfx.write(Sfx(sound));
+        }
         if let Some(line) = text::log_line(entry, &session.state, &story.content, &story.progress) {
             session.lines.push_back(line);
         }

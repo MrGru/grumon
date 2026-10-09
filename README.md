@@ -12,7 +12,7 @@ The game ships in **Vietnamese only** (vi-VN). Source code and developer docs ar
 
 **Chapter 1 (Phàm Trần Huyết Kiếp)** can be played from start to finish. Chapters 2–8 are outlined
 in the docs but not built yet. For what is done, what is missing and the risks, see
-[plan.md](plan.md). The game has no audio yet and uses placeholder art
+[plan.md](plan.md). It uses generated placeholder art and music
 ([docs/asset-manifest.md](docs/asset-manifest.md)).
 
 ## Features

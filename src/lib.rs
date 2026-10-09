@@ -5,6 +5,7 @@ use bevy_asset_loader::loading_state::{
 
 mod animation;
 mod asset;
+mod audio;
 pub mod battle;
 mod camera;
 mod character_creation;
@@ -108,6 +109,7 @@ impl Plugin for GamePlugin {
                 hud::HudPlugin,
                 pause_menu::PauseMenuPlugin,
                 save::SavePlugin,
+                audio::GameAudioPlugin,
                 screen_fx::ScreenFxPlugin,
                 debug::DebugPlugin,
             ));

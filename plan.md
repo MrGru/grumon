@@ -16,7 +16,8 @@ battles, 3 side quests, about 800 Vietnamese strings. Scripted playthrough tests
 chapter, but only part of it has been checked by hand in the running game (see M2). The battle
 engine already implements every core system (timeline, ĐHĐ/Linh lực, Tụ khí, channels, push and
 pull, formations, artifacts, elements). Content counts are still below the targets (see M3). There
-is no audio, there are no portraits, and the tileset is the original Grumon placeholder.
+music and sound are generated and not yet reviewed by ear, there are no portraits, and the tileset
+is the original Grumon placeholder.
 
 ---
 
@@ -58,7 +59,7 @@ is no audio, there are no portraits, and the tileset is the original Grumon plac
 | Chapter end (dawn, farewell) checked by hand | [ ] | Covered by `story_tests` only |
 | Save/load in-game during dialogue and combat | [x] | F5 inside a dialogue and inside the raid battle; F9 and the title load screen resume the exact node / battle state |
 | Save/load across a chapter transition | [ ] | There is only one chapter so far |
-| Audio (music + SFX) | [ ] | No audio exists. See asset-manifest.md §4 |
+| Audio (music + SFX) | [~] | 8 generated loops and 17 sound effects (`tools/gen_audio.py`), data-driven music per map/time/battle/story, volume settings. Verified in game through logs with a null audio device (`audio::tests`, music log); **not yet listened to by a human** |
 | Visual presentation: portraits, xianxia tileset, battle VFX | [ ] | Generated placeholder art only |
 | Item use outside battle (pause menu) | [ ] | Items can only be used in battle |
 

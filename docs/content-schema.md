@@ -219,8 +219,9 @@ SetFlag(name, n)  AddFlag(name, n)  GiveItem(id, n)  TakeItem(id, n)  GiveMoney(
 StartQuest(id)  CompleteQuest(id)  FailQuest(id)
 Dialogue(id)   Battle(encounter_id)   Warp(level, x, y)   Card(chapter_key)
 JoinParty(id)  LeaveParty(id)  LearnSkill(member, skill)  GiveArtifact(member, artifact)
-EquipArtifact(member, artifact)  Trust(character, n)   GainTuVi(n)   SetRealm(realm, stage)
-HealParty   Autosave   TimeOfDay(Day|Dusk|Night|Raid|Dawn)   Notify(key)
+Trust(character, n)   GainTuVi(n)   SetRealm(realm, stage)   SetFormation(Some(id)|None)
+HealParty   Autosave   TimeOfDay(Day|Dusk|Night|Raid|Dawn)   Notify(key)   SetChapter(n)
+Music(track | "")
 ```
 `Dialogue`, `Battle`, `Warp` and `Card` are *queued* and start after the current dialogue closes.
 
@@ -260,6 +261,18 @@ triggered), only while exploring.
 
 Map placements live in `assets/world.ldtk` and are written by `tools/build_ch1_map.py`, which is
 idempotent (re-running it replaces its own placements).
+
+### 3.15 Levels (music)
+
+Every LDtk level needs a `levels` entry (the validator checks both directions):
+
+```ron
+levels: [(id: "Village", music: "village",
+          music_by_time: {Night: "night", Raid: "raid", Dawn: "sorrow"})]
+```
+Tracks are file stems in `assets/audio/music/`. An encounter may set `music: Some("raid")`
+(default: `boss` if any enemy is a boss, else `battle`). The story effect `Music("sorrow")`
+overrides the map music until `Music("")`.
 
 ## 4. Chapters
 

@@ -139,7 +139,9 @@
     "ui.settings.battle_speed": "Tốc độ trận đấu: {value}",
     "ui.settings.normal": "Bình thường",
     "ui.settings.fast": "Nhanh",
-    "ui.settings.hint": "Enter: đổi. Trong trận có thể giữ Tab để tăng tốc tạm thời.",
+    "ui.settings.music": "Âm nhạc: {bar} {value}/{max}",
+    "ui.settings.sfx": "Hiệu ứng âm thanh: {bar} {value}/{max}",
+    "ui.settings.hint": "Enter: đổi tốc độ trận. Trái/Phải: chỉnh âm lượng. Trong trận có thể giữ Tab để tăng tốc tạm thời.",
 
     // ---------------------------------------------------------------- Trận đấu
     "ui.battle.timeline": "Thứ tự",
