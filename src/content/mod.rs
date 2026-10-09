@@ -303,6 +303,40 @@ mod tests {
     }
 
     /// Every character of every string has a glyph in the bundled fonts.
+    /// Every speaker has a portrait, and so does every protagonist look.
+    #[test]
+    fn every_speaker_has_a_portrait() {
+        use crate::content::defs::DialogueNode;
+        // Voices nobody can see.
+        const NO_PORTRAIT: [&str; 1] = ["giong_noi"];
+        let (db, _, _) = load_from_dir(&assets_dir()).expect("assets readable");
+        let dir = assets_dir().join("gfx/portraits");
+        let mut missing = std::collections::BTreeSet::new();
+        for dialogue in db.dialogues.values() {
+            for node in dialogue.nodes.values() {
+                let speaker = match node {
+                    DialogueNode::Line { speaker, .. } | DialogueNode::Choice { speaker, .. } => {
+                        speaker.as_deref()
+                    }
+                    _ => None,
+                };
+                if let Some(id) = speaker
+                    && id != crate::story::PLAYER_ID
+                    && !NO_PORTRAIT.contains(&id)
+                    && !dir.join(format!("{id}.png")).exists()
+                {
+                    missing.insert(id.to_string());
+                }
+            }
+        }
+        for sheet in crate::character_creation::APPEARANCES {
+            if !dir.join(format!("player_{sheet}.png")).exists() {
+                missing.insert(format!("player_{sheet}"));
+            }
+        }
+        assert!(missing.is_empty(), "portraits missing: {missing:?}");
+    }
+
     #[test]
     fn fonts_cover_every_character() {
         let (_, locale, _) = load_from_dir(&assets_dir()).expect("assets readable");

@@ -36,6 +36,7 @@ cargo fmt                      # format before committing
 cargo build --release          # size-optimized release build
 python3 tools/gen_art.py       # regenerate generated art (needs Pillow)
 python3 tools/gen_audio.py     # regenerate music and sound effects (needs numpy and ffmpeg)
+python3 tools/gen_portraits.py # regenerate dialogue portraits (needs Pillow)
 python3 tools/build_ch1_map.py # re-place Chapter 1 entities in world.ldtk (idempotent)
 ```
 
@@ -54,7 +55,7 @@ Set `THIEN_MENH_SAVE_DIR` to keep test saves out of your real save directory.
 | `src/story.rs` | `Progress`: flags, inventory, quests, party, cultivation. Applies `StoryEffect`s and evaluates `Condition`s (pure, no ECS) |
 | `src/flow.rs` | New game / load bridge, `ActionQueue` for deferred story actions, the `Story` system param, play time, F5/F9 |
 | `src/save.rs` | Save files (versioned JSON, atomic write, `.bak` fallback, migrations), slots |
-| `src/dialogue.rs` | Dialogue graph walker (`DialogueHost`), dialogue box UI with choices |
+| `src/dialogue.rs` | Dialogue graph walker (`DialogueHost`), dialogue box UI with choices and the speaker's portrait |
 | `src/battle/core/` | Deterministic battle engine: `state.rs`, `engine.rs`, `ai.rs`, `rng.rs`, `tests.rs` (no ECS) |
 | `src/battle/` | `mod.rs` battle session and input, `view.rs` UI, `text.rs` log/names, `balance_tests.rs` simulations |
 | `src/character_creation.rs` | Name entry (Telex/IME), addressing, appearance, confirmation |
@@ -78,7 +79,7 @@ Set `THIEN_MENH_SAVE_DIR` to keep test saves out of your real save directory.
 | `src/animation.rs` | Sprite-sheet animation, `Facing` |
 | `src/story_tests.rs` | Scripted Chapter 1 playthroughs (test only) |
 | `src/debug.rs` | Debug builds only: F1 inspector, F2 collision gizmos |
-| `tools/` | `build_ch1_map.py` (LDtk placements), `gen_art.py` (art generator), `gen_audio.py` (music and sound generator) |
+| `tools/` | `build_ch1_map.py` (LDtk placements), `gen_art.py` (art generator), `gen_audio.py` (music and sound generator), `gen_portraits.py` (dialogue portraits) |
 
 ## State machine
 

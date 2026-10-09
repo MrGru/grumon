@@ -350,6 +350,15 @@ fn chapter_1_minimal_path_skipping_side_content() {
     s.talk("thim_ba_dawn");
     s.talk("ly_duc_dawn");
     assert_eq!(s.p.flag("ch1.complete"), 1);
+    for quest in [
+        "ch1_hai_thuoc",
+        "ch1_le_hoi",
+        "ch1_huyet_kiep",
+        "ch1_chay_tron",
+        "ch1_binh_minh",
+    ] {
+        assert_eq!(s.quest(quest), Some(QuestState::Done), "{quest}");
+    }
     assert_eq!(s.p.flag("ch1.saved_dau"), 0);
     assert!(s.p.flag("stat.tam_ma") >= 2);
     assert!(
@@ -416,6 +425,7 @@ fn export_qa_saves() {
     }
     s.talk("ong_mac_day");
     s.talk("lien_dusk");
+    s.enter("ch1_raid_enter");
     s.enter("ch1_hac_y_zone");
     s.talk("be_dau_raid");
     s.talk("ong_mac_raid");
@@ -444,11 +454,15 @@ fn export_qa_saves() {
         )
         .expect("write save");
     }
-    // Slot 3: dawn in the village after the last battle, for the pause menu
-    // (pill in the jar, party tab). Knows a formation only to show its row.
+    // Slot 3: dawn, next to Lý Đức just before the farewell (grave, token and
+    // thím Ba done; the jar is still unused). Knows a formation only so the
+    // party tab shows its row.
+    s.use_object("ch1_mo_ong_mac");
+    s.use_object("ch1_lenh_bai");
+    s.talk("thim_ba_dawn");
     let mut dawn = s.p.clone();
     assert_eq!(dawn.level, "Village");
-    dawn.feet = (262, 214);
+    dawn.feet = (540, 474);
     dawn.formations_known.push("ho_tam_tran".into());
     write_save(
         Path::new(&dir),

@@ -45,6 +45,9 @@ pub struct GameAssets {
     /// Sound effects, keyed by path (`audio/sfx/<id>.ogg`).
     #[asset(path = "audio/sfx", collection(typed, mapped))]
     pub sfx: HashMap<String, Handle<AudioSource>>,
+    /// Dialogue portraits, keyed by path (`gfx/portraits/<id>.png`).
+    #[asset(path = "gfx/portraits", collection(typed, mapped))]
+    pub portraits: HashMap<String, Handle<Image>>,
     #[asset(path = "gfx/ui/title.png")]
     pub title_background: Handle<Image>,
     /// Body and UI text (Vietnamese coverage).
@@ -82,6 +85,13 @@ impl GameAssets {
     pub fn battle_background(&self, id: &str) -> Option<Handle<Image>> {
         self.battle_backgrounds
             .get(&format!("gfx/battle/{id}.png"))
+            .cloned()
+    }
+
+    /// Portrait for a dialogue speaker: a character id, or `player_<sheet>`.
+    pub fn portrait(&self, id: &str) -> Option<Handle<Image>> {
+        self.portraits
+            .get(&format!("gfx/portraits/{id}.png"))
             .cloned()
     }
 

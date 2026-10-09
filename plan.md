@@ -16,8 +16,8 @@ battles, 3 side quests, about 800 Vietnamese strings. Scripted playthrough tests
 chapter, but only part of it has been checked by hand in the running game (see M2). The battle
 engine already implements every core system (timeline, ĐHĐ/Linh lực, Tụ khí, channels, push and
 pull, formations, artifacts, elements). Content counts are still below the targets (see M3). There
-music and sound are generated and not yet reviewed by ear, there are no portraits, and the tileset
-is the original Grumon placeholder.
+music and sound are generated and not yet reviewed by ear, portraits are generated placeholders, and the
+tileset is the original Grumon placeholder.
 
 ---
 
@@ -56,11 +56,12 @@ is the original Grumon placeholder.
 | Every story branch reaches the end of the chapter | [x] | Two scripted paths plus side-quest failure tests. Not exhaustive over all choice combinations |
 | Raid formation battle and Lang Nha battle checked in the running game | [~] | Loaded from QA saves (`story_tests::export_qa_saves`): opening turns played, shield, guard, Tụ khí stages 1–2 and a stage-2 *Phá Thạch Quyền* release work. Neither fight was played to the end by hand |
 | Battle ends and returns to the map, autosave written | [x] | In-game: boar battle won from a QA save, back on the Forest map, `auto.json` has `ch1.da_tru_defeated` |
-| Chapter end (dawn, farewell) checked by hand | [ ] | Covered by `story_tests` only |
+| Chapter end (dawn, farewell) checked by hand | [x] | In-game from a QA save: grave, token, medicine jar, thím Ba, Lý Đức's farewell, "Hết Chương 1" card, autosave with all five main quests Done. This check found the raid-entry objective could stall the quest chain if its trigger was skipped; fixed and now asserted by both playthrough tests |
 | Save/load in-game during dialogue and combat | [x] | F5 inside a dialogue and inside the raid battle; F9 and the title load screen resume the exact node / battle state |
 | Save/load across a chapter transition | [ ] | There is only one chapter so far |
 | Audio (music + SFX) | [~] | 8 generated loops and 17 sound effects (`tools/gen_audio.py`), data-driven music per map/time/battle/story, volume settings. Verified in game through logs with a null audio device (`audio::tests`, music log); **not yet listened to by a human** |
-| Visual presentation: portraits, xianxia tileset, battle VFX | [ ] | Generated placeholder art only |
+| Dialogue portraits | [x] | 20 generated portraits (`tools/gen_portraits.py`), shown left of the dialogue text; `content::tests::every_speaker_has_a_portrait`. One expression each |
+| Visual presentation: xianxia tileset, burned village at dawn, battle VFX | [ ] | Generated placeholder art; the village looks untouched after the raid (only a screen tint) |
 | Item use outside battle (pause menu) | [x] | `party::tests::*`, playthrough uses the Tụ Khí Đan from ông Mạc's jar; in-game: pill used from Túi đồ, tu vi 0 → 40. Healing items stay battle-only because every battle starts at full Khí huyết (game-systems §8.6) |
 
 Acceptance: a new player finishes Ch1 without help, every in-game save/load case passes, and

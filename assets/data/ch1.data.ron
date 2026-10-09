@@ -113,7 +113,8 @@
          on_complete: [StartQuest("ch1_huyet_kiep")]),
         (id: "ch1_huyet_kiep", chapter: 1, kind: Main,
          objectives: [
-            (id: "enter", done_when: Flag("ch1.raid_entered")),
+            // Later raid events also count, so the chain never stalls on this trigger.
+            (id: "enter", done_when: Any([Flag("ch1.raid_entered"), Flag("ch1.hac_y_defeated"), Flag("ch1.ong_mac_dead")])),
             (id: "find", done_when: Flag("ch1.ong_mac_dead")),
          ],
          on_complete: [StartQuest("ch1_chay_tron")]),

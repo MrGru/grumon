@@ -143,6 +143,13 @@ struct DialogueBox;
 #[derive(Component)]
 struct SpeakerText;
 
+/// The speaker's portrait, left of the text (hidden for narration).
+#[derive(Component)]
+struct Portrait;
+
+/// Portrait size on screen: 48×48 art at 3×.
+const PORTRAIT_PX: f32 = 144.0;
+
 #[derive(Component)]
 struct DialogueText;
 
@@ -254,11 +261,10 @@ fn spawn_dialogue_box(mut commands: Commands, assets: Res<GameAssets>) {
             right: Val::Px(28.0),
             bottom: Val::Px(20.0),
             min_height: Val::Px(170.0),
-            padding: UiRect::axes(Val::Px(22.0), Val::Px(16.0)),
+            padding: UiRect::axes(Val::Px(18.0), Val::Px(14.0)),
             border: UiRect::all(Val::Px(2.0)),
             border_radius: BorderRadius::all(Val::Px(8.0)),
-            flex_direction: FlexDirection::Column,
-            row_gap: Val::Px(8.0),
+            column_gap: Val::Px(18.0),
             ..default()
         },
         BackgroundColor(ui::PANEL),
@@ -266,25 +272,51 @@ fn spawn_dialogue_box(mut commands: Commands, assets: Res<GameAssets>) {
         GlobalZIndex(20),
         children![
             (
-                SpeakerText,
-                Text::new(""),
-                ui::font(&assets, FontKind::Bold, 21.0),
-                TextColor(ui::GOLD)
-            ),
-            (
-                DialogueText,
-                Text::new(""),
-                ui::font(&assets, FontKind::Body, 21.0),
-                TextColor(ui::TEXT)
-            ),
-            (
-                ChoiceList,
+                Portrait,
+                ImageNode::default(),
                 Node {
-                    flex_direction: FlexDirection::Column,
-                    row_gap: Val::Px(4.0),
-                    margin: UiRect::top(Val::Px(4.0)),
+                    width: Val::Px(PORTRAIT_PX),
+                    height: Val::Px(PORTRAIT_PX),
+                    flex_shrink: 0.0,
+                    align_self: AlignSelf::Center,
+                    border: UiRect::all(Val::Px(2.0)),
+                    border_radius: BorderRadius::all(Val::Px(6.0)),
+                    display: Display::None,
                     ..default()
                 },
+                BackgroundColor(Color::srgba(0.10, 0.14, 0.16, 1.0)),
+                BorderColor::all(ui::BORDER_DIM),
+            ),
+            (
+                Node {
+                    flex_direction: FlexDirection::Column,
+                    flex_grow: 1.0,
+                    row_gap: Val::Px(8.0),
+                    ..default()
+                },
+                children![
+                    (
+                        SpeakerText,
+                        Text::new(""),
+                        ui::font(&assets, FontKind::Bold, 21.0),
+                        TextColor(ui::GOLD)
+                    ),
+                    (
+                        DialogueText,
+                        Text::new(""),
+                        ui::font(&assets, FontKind::Body, 21.0),
+                        TextColor(ui::TEXT)
+                    ),
+                    (
+                        ChoiceList,
+                        Node {
+                            flex_direction: FlexDirection::Column,
+                            row_gap: Val::Px(4.0),
+                            margin: UiRect::top(Val::Px(4.0)),
+                            ..default()
+                        },
+                    ),
+                ],
             ),
             (
                 ContinueIndicator,
@@ -364,7 +396,31 @@ fn update_dialogue_ui(
     mut text: Single<&mut Text, (With<DialogueText>, Without<SpeakerText>)>,
     mut indicator: Single<&mut Visibility, With<ContinueIndicator>>,
     choices: Single<(Entity, Option<&Children>), With<ChoiceList>>,
+    mut portrait: Single<(&mut ImageNode, &mut Node), With<Portrait>>,
 ) {
+    // The player's portrait follows the chosen look (`player_<sheet>`).
+    let portrait_id = session.speaker.as_deref().map(|s| {
+        if s == crate::story::PLAYER_ID {
+            format!("player_{}", progress.profile.sheet)
+        } else {
+            s.to_string()
+        }
+    });
+    let image = portrait_id.and_then(|id| assets.portrait(&id));
+    let (node_image, node) = &mut *portrait;
+    let display = if image.is_some() {
+        Display::Flex
+    } else {
+        Display::None
+    };
+    if node.display != display {
+        node.display = display;
+    }
+    if let Some(image) = image
+        && node_image.image != image
+    {
+        node_image.image = image;
+    }
     let name = session
         .speaker
         .as_deref()
