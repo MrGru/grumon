@@ -6,14 +6,16 @@ use crate::{
     animation::{AnimationIndices, AnimationTimer, Facing},
     asset::GameAssets,
     collision::{Collider, CollisionWorld},
+    flow::SessionSetup,
+    input::MenuInput,
     level::LevelInfo,
+    story::Progress,
+    transition::PLAYER_FEET_TO_CENTER,
     ysort::YSort,
 };
 
 const PLAYER_SPEED: f32 = 90.0;
 const PLAYER_SIZE: Vec2 = Vec2::splat(32.0);
-/// Character sheet used for the hero (`ow1.png`).
-const PLAYER_SHEET: usize = 1;
 /// Cap the frame delta so a hitch can't push the player through a wall.
 const MAX_STEP_SECS: f32 = 1.0 / 20.0;
 
@@ -28,10 +30,18 @@ pub struct Player {
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Player>()
-            .add_systems(Update, spawn_player.run_if(in_state(GameState::Playing)))
+            .add_systems(
+                OnEnter(GameState::Playing),
+                spawn_player.after(SessionSetup),
+            )
             .add_systems(
                 Update,
-                player_movement
+                remove_start_markers.run_if(in_state(GameState::Playing)),
+            )
+            .add_systems(
+                Update,
+                (player_movement, record_position)
+                    .chain()
                     .in_set(PlayerMovement)
                     .run_if(in_state(PlayState::Exploring)),
             )
@@ -48,46 +58,40 @@ pub fn player_collider() -> Collider {
     Collider::feet(PLAYER_SIZE, 12.0, 8.0, 1.0)
 }
 
-/// The LDtk "Player" entity only marks the start position. The real player is
-/// a top-level entity so it survives level changes.
+/// The player is a top-level entity so it survives level changes. It is
+/// placed by the transition that loads the first level.
 fn spawn_player(
     mut commands: Commands,
     game_assets: Res<GameAssets>,
-    markers: Query<(Entity, &EntityInstance, &Transform), Added<EntityInstance>>,
-    players: Query<(), With<Player>>,
+    progress: Option<Res<Progress>>,
 ) {
-    for (entity, entity_instance, transform) in &markers {
-        if entity_instance.identifier != "Player" {
-            continue;
-        }
-        commands.entity(entity).despawn();
-        if !players.is_empty() {
-            continue;
-        }
-        info!("spawning player");
-        commands.spawn((
-            Name::new("Player"),
-            Player {
-                speed: PLAYER_SPEED,
-            },
-            game_assets.character_sprite(PLAYER_SHEET),
-            Transform::from_translation(transform.translation.truncate().extend(0.0)),
-            Facing::Down,
-            Facing::Down.idle(),
-            AnimationTimer(Timer::from_seconds(0.15, TimerMode::Repeating)),
-            YSort::from_height(PLAYER_SIZE.y),
-            player_collider(),
-        ));
-    }
+    let sheet = progress.map_or(1, |p| p.profile.sheet);
+    commands.spawn((
+        Name::new("Player"),
+        Player {
+            speed: PLAYER_SPEED,
+        },
+        DespawnOnExit(GameState::Playing),
+        game_assets.character_sprite(sheet),
+        Transform::from_xyz(-10_000.0, -10_000.0, 0.0),
+        Facing::Down,
+        Facing::Down.idle(),
+        AnimationTimer(Timer::from_seconds(0.15, TimerMode::Repeating)),
+        YSort::from_height(PLAYER_SIZE.y),
+        player_collider(),
+    ));
 }
 
-fn movement_input(keyboard: &ButtonInput<KeyCode>) -> Vec2 {
-    let pressed = |keys: [KeyCode; 2]| keyboard.any_pressed(keys) as i32 as f32;
-    Vec2::new(
-        pressed([KeyCode::KeyD, KeyCode::ArrowRight])
-            - pressed([KeyCode::KeyA, KeyCode::ArrowLeft]),
-        pressed([KeyCode::KeyW, KeyCode::ArrowUp]) - pressed([KeyCode::KeyS, KeyCode::ArrowDown]),
-    )
+/// The LDtk `Player` entity is only an editor reference for the start point.
+fn remove_start_markers(
+    mut commands: Commands,
+    markers: Query<(Entity, &EntityInstance), Added<EntityInstance>>,
+) {
+    for (entity, instance) in &markers {
+        if instance.identifier == "Player" {
+            commands.entity(entity).despawn();
+        }
+    }
 }
 
 fn player_movement(
@@ -103,7 +107,7 @@ fn player_movement(
     >,
     solids: Query<(&Collider, &GlobalTransform), Without<Player>>,
     level: Res<LevelInfo>,
-    keyboard: Res<ButtonInput<KeyCode>>,
+    input: Res<MenuInput>,
     time: Res<Time>,
 ) {
     let Ok((player, collider, mut transform, mut facing, mut animation)) = player.single_mut()
@@ -111,7 +115,7 @@ fn player_movement(
         return;
     };
 
-    let input = movement_input(&keyboard);
+    let input = input.axis;
     if input == Vec2::ZERO {
         *animation = facing.idle();
         return;
@@ -135,6 +139,32 @@ fn player_movement(
     let delta = input.normalize() * player.speed * dt;
     let position = world.move_and_slide(collider, transform.translation.truncate(), delta);
     transform.translation = position.extend(transform.translation.z);
+}
+
+/// Keeps the save position (feet, LDtk pixels) up to date.
+fn record_position(
+    player: Query<&Transform, With<Player>>,
+    level: Res<LevelInfo>,
+    progress: Option<ResMut<Progress>>,
+) {
+    let (Ok(transform), Some(mut progress)) = (player.single(), progress) else {
+        return;
+    };
+    if level.identifier.is_empty() {
+        return;
+    }
+    let feet = Vec2::new(
+        transform.translation.x,
+        level.size_px().y - (transform.translation.y - PLAYER_FEET_TO_CENTER),
+    )
+    .round()
+    .as_ivec2();
+    if progress.level != level.identifier {
+        progress.level = level.identifier.clone();
+    }
+    if progress.feet != (feet.x, feet.y) {
+        progress.feet = (feet.x, feet.y);
+    }
 }
 
 fn stop_walking(mut player: Query<(&Facing, &mut AnimationIndices), With<Player>>) {

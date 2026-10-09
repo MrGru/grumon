@@ -1,0 +1,123 @@
+// Shared definitions: items, techniques, artifacts, formations, playable characters.
+// Player-facing text lives in assets/locale/vi-VN/core.locale.ron (keys derived from IDs).
+(
+    items: [
+        // --- Battle consumables ---
+        (id: "banh_dau_xanh", category: Medicine, rarity: Common, price: 4,
+         battle_use: [HealPct(30)], target: Ally),
+        (id: "soi_nem", category: Medicine, rarity: Common, price: 1,
+         battle_use: [Damage(power: 40), Delay(250)], target: Enemy),
+        (id: "khoi_me_huong", category: Medicine, rarity: Uncommon, price: 12,
+         battle_use: [Delay(300)], target: AllEnemies),
+        (id: "thuoc_tri_thuong", category: Medicine, rarity: Common, price: 8,
+         battle_use: [HealPct(45), Cleanse], target: Ally),
+        (id: "hoi_khi_tan", category: Medicine, rarity: Uncommon, price: 15,
+         battle_use: [RestoreLl(50)], target: Ally),
+        // --- Materials ---
+        (id: "thanh_tam_thao", category: Material, rarity: Common, price: 3),
+        (id: "linh_lang_nanh", category: Material, rarity: Uncommon, price: 10),
+        (id: "da_tru_nanh", category: Material, rarity: Common, price: 4),
+        (id: "go_dao", category: Material, rarity: Common, price: 0),
+        (id: "ca_suoi", category: Material, rarity: Common, price: 2),
+        // --- Quest items ---
+        (id: "con_dieu", category: Quest, rarity: Common),
+        (id: "dao_khac", category: Quest, rarity: Common),
+        (id: "tram_go_hoa_sen", category: Quest, rarity: Uncommon),
+        (id: "tan_ngoc", category: Quest, rarity: Legendary),
+        (id: "so_thuoc_ong_mac", category: Quest, rarity: Rare),
+        (id: "lenh_bai_ngoai_mon", category: Quest, rarity: Rare),
+        (id: "thu_lenh_dau_may", category: Quest, rarity: Rare),
+    ],
+
+    skills: [
+        // --- Protagonist ---
+        (id: "quet_gay", ap: 2, ll: 0, target: AllEnemies, melee: false,
+         effects: [Damage(power: 55)]),
+        (id: "pha_thach_quyen", ap: 2, ll: 10, target: Enemy, melee: true, element: Tho, chargeable: true,
+         effects: [Damage(power: 220)],
+         charge_bonus: [(stage: 2, effects: [Status(id: PhaGiap, turns: 2)])]),
+        (id: "nghich_menh_chi", ap: 3, ll: 18, target: Enemy, melee: true, chargeable: true, delay: 200,
+         effects: [Damage(power: 260, interrupt: true)],
+         charge_bonus: [(stage: 3, effects: [Status(id: Choang, turns: 1)])]),
+        // --- Guests and companions ---
+        (id: "thanh_moc_cham", ap: 1, ll: 8, target: Enemy, element: Moc,
+         effects: [Damage(power: 120, scaling: Spi), Status(id: Cham, turns: 2)]),
+        (id: "duong_sinh_quyet", ap: 2, ll: 14, target: Ally, element: Moc,
+         effects: [Heal(power: 160, scaling: Spi), Cleanse]),
+        // --- Artifact actives ---
+        (id: "phong_linh", ap: 1, ll: 0, target: SelfOnly,
+         effects: [ReleaseStoredLl, GainCharge(1)]),
+        (id: "huyen_quy_ho_the", ap: 1, ll: 6, cooldown: 1, target: Ally,
+         effects: [Shield(power: 60, scaling: Spi, flat: 30)]),
+        (id: "thanh_van_kiem_vu", ap: 2, ll: 10, cooldown: 1, target: Enemy, element: Kim,
+         effects: [Damage(power: 45, hits: 3, bonus_hit_if_faster: true)]),
+        (id: "tran_hon_chuong", ap: 1, ll: 8, cooldown: 4, target: Enemy,
+         effects: [Interrupt, Delay(250)]),
+        (id: "ngu_hanh_doi_ky", ap: 1, ll: 5, cooldown: 3, target: Ally,
+         effects: [SetElement(element: Hoa, turns: 2)]),
+        (id: "huyen_anh_phan_than", ap: 1, ll: 8, cooldown: 2, target: Ally,
+         effects: [Status(id: HuAnh, turns: 0)]),
+        (id: "xich_viem_bao", ap: 2, ll: 6, cooldown: 1, target: Enemy, element: Hoa,
+         effects: [ConsumeChargeDamage(power_per_stage: 120, scaling: Spi), Status(id: Bong, turns: 2)]),
+        (id: "hon_dang_phe_anh", ap: 1, ll: 0, cooldown: 2, target: Enemy,
+         effects: [DrainLl(20)]),
+        (id: "truy_phong_bo", ap: 1, ll: 4, cooldown: 3, target: Ally,
+         effects: [Haste(300)]),
+        (id: "bach_thao_luyen", ap: 2, ll: 15, cooldown: 4, target: AllAllies, windup: Some(800),
+         effects: [HealPct(35), Cleanse]),
+        (id: "pha_son_tran", ap: 2, ll: 12, cooldown: 3, target: Enemy, element: Tho,
+         effects: [StunIfChanneling(else_power: 80)]),
+        (id: "kiem_phoi_tram", ap: 2, ll: 8, target: Enemy, melee: true, element: Kim, chargeable: true,
+         effects: [Damage(power: 170)]),
+    ],
+
+    artifacts: [
+        (id: "tu_linh_ho_lo", tier: 1, active: Some("phong_linh"), charges_per_battle: Some(2),
+         passives: [StoreLl(30)]),
+        (id: "huyen_quy_thuan", tier: 2, element: Thuy, active: Some("huyen_quy_ho_the"),
+         passives: [ShieldToEnergy]),
+        (id: "thanh_van_phi_kiem", tier: 2, element: Kim, active: Some("thanh_van_kiem_vu")),
+        (id: "tran_hon_linh", tier: 2, active: Some("tran_hon_chuong")),
+        (id: "ngu_hanh_ky", tier: 2, active: Some("ngu_hanh_doi_ky")),
+        (id: "huyen_anh_kinh", tier: 2, element: Thuy, active: Some("huyen_anh_phan_than")),
+        (id: "xich_viem_chau", tier: 3, element: Hoa, active: Some("xich_viem_bao"), passives: [Overheat]),
+        (id: "ban_menh_kiem_phoi", tier: 4, element: Kim, active: Some("kiem_phoi_tram")),
+        (id: "hon_dang", tier: 2, element: Hoa, active: Some("hon_dang_phe_anh")),
+        (id: "truy_phong_ngoa", tier: 1, active: Some("truy_phong_bo"), passives: [SpeedBonus(5)]),
+        (id: "bach_thao_dinh", tier: 3, element: Moc, active: Some("bach_thao_luyen")),
+        (id: "pha_son_an", tier: 3, element: Tho, active: Some("pha_son_tran")),
+    ],
+
+    formations: [
+        (id: "ho_tam_tran", min_members: 1, phases: [
+            (threshold: 2, aura: [WardEachActivation]),
+            (threshold: 4, pulse: [ShieldAllPct(15)]),
+            (threshold: 6, pulse: [CleanseAll, ShieldAllPct(30)]),
+        ], release: [ShieldAllPct(10)]),
+        (id: "tam_tai_kiem_tran", min_members: 3, phases: [
+            (threshold: 3, aura: [AtkPct(15)]),
+            (threshold: 6, pulse: [StrikeAll(60)]),
+            (threshold: 9, pulse: [StrikeAll(60), StrikeAll(60), StrikeAll(60)]),
+        ], release: [StrikeAll(80)]),
+        (id: "ngu_hanh_tran", min_members: 2, elements_required: 2, phases: [
+            (threshold: 3, aura: [LlRegen(4), ComboEnergy(1)]),
+            (threshold: 6, pulse: [RestoreLlAllPct(20)]),
+        ], release: [RestoreLlAllPct(40)]),
+        (id: "pha_linh_tran", min_members: 2, phases: [
+            (threshold: 3, aura: [AtkPct(10)]),
+            (threshold: 6, pulse: [InterruptAllEnemies]),
+        ], release: [StatusAllEnemies(PhaGiap, 2), StatusAllEnemies(PhongAn, 1)]),
+    ],
+
+    characters: [
+        // The protagonist; the sheet comes from the player's choice.
+        (id: "player", sheet: 1, element: Tho, nghich_menh: true,
+         base: (hp: 84, ll: 20, atk: 10, spi: 4, def: 5, tp: 32),
+         growth: (hp: 38, ll: 22, atk: 6, spi: 3, def: 3, tp: 6),
+         skills: ["quet_gay"], artifacts: []),
+        // Guest in the night raid: his formation shields the hero.
+        (id: "ong_mac", sheet: 10, element: Moc,
+         base: (hp: 230, ll: 90, atk: 12, spi: 26, def: 14, tp: 34),
+         skills: ["thanh_moc_cham", "duong_sinh_quyet"], artifacts: ["huyen_quy_thuan"]),
+    ],
+)

@@ -3170,6 +3170,10 @@ dependencies = [
  "bevy-inspector-egui",
  "bevy_asset_loader",
  "bevy_ecs_ldtk",
+ "ron",
+ "serde",
+ "serde_json",
+ "ttf-parser",
 ]
 
 [[package]]

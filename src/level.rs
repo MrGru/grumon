@@ -9,7 +9,7 @@ use crate::{
     ysort::YSort,
 };
 
-/// Level shown when a new game starts.
+/// Fallback level when data names none.
 pub const START_LEVEL: &str = "Village";
 /// IntGrid layer holding collision data.
 const COLLISION_LAYER: &str = "IntGrid";
@@ -35,8 +35,17 @@ impl Plugin for LevelPlugin {
             .register_ldtk_entity::<TreeBundle>("SnowTree")
             .register_ldtk_entity::<TreeBundle>("Palm")
             .register_ldtk_entity::<HouseBundle>("House")
+            .register_ldtk_entity::<HouseBundle>("HouseSmall")
+            .register_ldtk_entity::<HouseBundle>("HouseSmallPurple")
+            .register_ldtk_entity::<HouseBundle>("HouseBig")
             .register_ldtk_entity::<WarpBundle>("Warp")
-            .add_systems(OnEnter(GameState::Playing), spawn_world)
+            .add_systems(
+                OnEnter(GameState::Playing),
+                spawn_world.after(crate::flow::SessionSetup),
+            )
+            .add_systems(OnExit(GameState::Playing), |mut info: ResMut<LevelInfo>| {
+                *info = LevelInfo::default();
+            })
             .add_systems(
                 PreUpdate,
                 update_level_info.run_if(in_state(GameState::Playing)),
@@ -44,9 +53,18 @@ impl Plugin for LevelPlugin {
     }
 }
 
-fn spawn_world(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn spawn_world(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    pending: Option<Res<crate::transition::PendingWarp>>,
+    mut selection: ResMut<LevelSelection>,
+) {
+    if let Some(pending) = pending {
+        *selection = LevelSelection::Identifier(pending.level().to_string());
+    }
     commands.spawn((
         Name::new("LdtkWorld"),
+        DespawnOnExit(GameState::Playing),
         LdtkWorldBundle {
             ldtk_handle: asset_server.load("world.ldtk").into(),
             ..default()
