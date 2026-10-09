@@ -26,6 +26,35 @@ pub struct DataFile {
     pub objects: Vec<ObjectDef>,
     pub chapters: Vec<ChapterDef>,
     pub levels: Vec<LevelDef>,
+    pub summons: Vec<SummonDef>,
+}
+
+/// A battle summon (`BattleEffect::Summon`): a short-lived spirit on the
+/// summoner's side that does not act, only guards. Name: `summon.<id>.name`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SummonDef {
+    pub id: String,
+    #[serde(default)]
+    pub sheet: usize,
+    #[serde(default)]
+    pub sprite: Option<String>,
+    #[serde(default)]
+    pub tint: Option<(f32, f32, f32)>,
+    /// Khí huyết as a percentage of the summoner's maximum.
+    pub hp_pct: u32,
+    /// Thủ as a percentage of the summoner's.
+    #[serde(default = "hundred")]
+    pub def_pct: u32,
+    /// Own activations before it fades.
+    pub turns: u8,
+    /// Forces single-target attacks onto itself (Khiêu khích).
+    #[serde(default)]
+    pub taunt: bool,
+}
+
+fn hundred() -> u32 {
+    100
 }
 
 /// Per-map settings that are not part of the LDtk layout.
@@ -465,6 +494,8 @@ pub enum BattleEffect {
         else_power: u32,
     },
     ReleaseStoredLl,
+    /// Calls a `SummonDef` onto the user's side (replacing the user's previous one).
+    Summon(String),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -545,6 +576,8 @@ pub enum FormationEffect {
     InterruptAllEnemies,
     StatusAllEnemies(StatusKind, u8),
     StatusAllAllies(StatusKind, u8),
+    /// A status on every party member in one row.
+    StatusRow(Slot, StatusKind, u8),
     HasteAll(u32),
     DelayAllEnemies(u32),
 }
@@ -558,6 +591,8 @@ pub enum FormationAura {
     LlRegen(u32),
     /// Extra energy per Tương sinh combo.
     ComboEnergy(u32),
+    /// Đổi vị trí costs no Điểm hành động for formation nodes.
+    FreeSwap,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -612,6 +647,8 @@ pub enum AiCond {
     EveryNth(u32, u32),
     AllyHpBelow(u32),
     FoeHasShield,
+    /// Some living ally (or the unit itself) lacks this status.
+    AllyLacks(StatusKind),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -744,6 +781,13 @@ pub struct CharacterDef {
     /// Practises Nghịch Mệnh Quyết: can overcharge to Tụ khí stage 4.
     #[serde(default)]
     pub nghich_menh: bool,
+    /// Battle row when joining the party (casters stand further back).
+    #[serde(default = "front_slot")]
+    pub slot: Slot,
+}
+
+fn front_slot() -> Slot {
+    Slot::Front
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

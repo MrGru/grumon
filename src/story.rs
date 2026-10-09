@@ -80,7 +80,7 @@ impl Member {
             tu_vi: 0,
             skills: def.skills.clone(),
             artifacts: def.artifacts.clone(),
-            slot: Slot::Front,
+            slot: def.slot,
         }
     }
 

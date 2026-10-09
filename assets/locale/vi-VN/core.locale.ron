@@ -73,6 +73,18 @@
     "skill.pha_son_tran.desc": "Ấn núi đè xuống: kẻ đang niệm chú bị Choáng, nếu không thì chịu sát thương hệ Thổ.",
     "skill.kiem_phoi_tram.name": "Kiếm Phôi Trảm",
     "skill.kiem_phoi_tram.desc": "Chém bằng phôi kiếm bản mệnh (170% Công), có thể Tụ khí.",
+    "skill.chieu_hon_trieu.name": "Chiêu Hồn",
+    "skill.chieu_hon_trieu.desc": "Phất cờ gọi một Oán Hồn Vệ đứng hàng Tiền. Nó hút mọi đòn đánh đơn trong hai lượt rồi tan biến.",
+    "skill.thanh_van_kiem_quyet.name": "Thanh Vân Kiếm Quyết",
+    "skill.thanh_van_kiem_quyet.desc": "Hai nhát kiếm liền (75% Công mỗi nhát). Tụ khí bậc 2: thêm một nhát; bậc 3: gây Phá giáp.",
+    "skill.han_bang_chuong.name": "Hàn Băng Chưởng",
+    "skill.han_bang_chuong.desc": "Chưởng lực băng giá (130% Pháp). Tụ khí bậc 1: gây Chậm; bậc 3: đóng băng gây Choáng.",
+    "skill.liet_hoa_phan_thien.name": "Liệt Hỏa Phần Thiên",
+    "skill.liet_hoa_phan_thien.desc": "Biển lửa thiêu toàn bộ kẻ địch (80% Pháp). Tụ khí bậc 2: gây Bỏng.",
+    "skill.hon_hoa_phe_linh.name": "Hồn Hỏa Phệ Linh",
+    "skill.hon_hoa_phe_linh.desc": "Lửa hồn đốt kẻ địch (90% Pháp) và hút 10 linh lực. Tụ khí bậc 2: hút thêm 15; bậc 3: Phong ấn.",
+    "skill.moc_linh_hoi_xuan.name": "Mộc Linh Hồi Xuân",
+    "skill.moc_linh_hoi_xuan.desc": "Mưa xuân hồi khí huyết cho cả đội (70% Pháp). Tụ khí bậc 2: giải trạng thái xấu; bậc 3: ban Hộ tâm.",
 
     // ---------------------------------------------------------------- Pháp bảo
     "artifact.tu_linh_ho_lo.name": "Tụ Linh Hồ Lô",
@@ -101,6 +113,9 @@
     "artifact.bach_thao_dinh.desc": "Pháp bảo. Luyện thuốc ngay giữa trận: niệm lâu rồi hồi phục cả đội. Có thể bị ngắt.",
     "artifact.pha_son_an.name": "Phá Sơn Ấn",
     "artifact.pha_son_an.desc": "Pháp bảo. Làm Choáng kẻ đang niệm chú; Kiên định thì không có tác dụng.",
+    "artifact.chieu_hon_phien.name": "Chiêu Hồn Phiên",
+    "artifact.chieu_hon_phien.desc": "Pháp bảo. Lá cờ đen thêu chú văn, gọi Oán Hồn Vệ chắn đòn cho đồng đội trong hai lượt. Đòn đánh lan không bị nó hút.",
+    "summon.oan_hon_ve.name": "Oán Hồn Vệ",
 
     // ---------------------------------------------------------------- Trận pháp
     "formation.ho_tam_tran.name": "Hộ Tâm Trận",
@@ -111,6 +126,10 @@
     "formation.ngu_hanh_tran.desc": "Cần 2 hệ khác nhau. Tầng 1: hồi thêm linh lực, Tương sinh nạp thêm trận lực. Tầng 2: hồi 20% linh lực cả đội.",
     "formation.pha_linh_tran.name": "Phá Linh Trận",
     "formation.pha_linh_tran.desc": "Tầng 1: +10% Công. Tầng 2: ngắt mọi thần chú của địch. Phát trận: Phá giáp và Phong ấn toàn bộ kẻ địch.",
+    "formation.luong_nghi_tran.name": "Lưỡng Nghi Trận",
+    "formation.luong_nghi_tran.desc": "Cần 2 người. Tầng 1: Đổi vị trí không tốn ĐHĐ. Tầng 2: cả đội được thúc lượt. Phát trận: kéo mọi trận nhãn lên hành động ngay.",
+    "formation.cuu_cung_me_tran.name": "Cửu Cung Mê Trận",
+    "formation.cuu_cung_me_tran.desc": "Cần 3 người. Tầng 1: người hàng Hậu nhận Hư ảnh. Tầng 2: mê trận làm Chậm mọi kẻ địch. Phát trận: cả đội nhận Hư ảnh, đẩy lượt kẻ địch lùi.",
 
     // ---------------------------------------------------------------- Trạng thái
     "status.bong.name": "Bỏng",
@@ -143,4 +162,9 @@
     "status.khieu_khich.desc": "Kẻ địch buộc phải nhắm vào người này.",
     "status.qua_nhiet.name": "Quá nhiệt",
     "status.qua_nhiet.desc": "Tích đủ 3 tầng sẽ tự thiêu mất 15% khí huyết.",
+
+    // ---------------------------------------------------------------- Đồng hành (Chương 2+)
+    "char.diep_han_suong.name": "Diệp Hàn Sương",
+    "char.au_duong_liet.name": "Âu Dương Liệt",
+    "char.ta_vo_uu.name": "Tạ Vô Ưu",
 }

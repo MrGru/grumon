@@ -162,8 +162,12 @@ at or above a stage (e.g. *Phá Thạch Quyền* applies **Phá giáp** at stage
 Instant versions are always available (stage 0). Release early for safety, or keep charging for
 power.
 
-Content status: 3 of the 8 planned chargeable techniques ship (`pha_thach_quyen`,
-`nghich_menh_chi`, `kiem_phoi_tram`). The other five come with the Ch2–Ch3 companions ⏳.
+Content status ✅: 8 chargeable techniques — `pha_thach_quyen`, `nghich_menh_chi`, `kiem_phoi_tram`
+(protagonist) and five for the companions: `thanh_van_kiem_quyet` (Diệp Hàn Sương, +1 hit at stage
+2, Phá giáp at 3), `han_bang_chuong` (Diệp, Chậm at 1, Choáng at 3), `liet_hoa_phan_thien` (Âu
+Dương Liệt, area, Bỏng at 2), `hon_hoa_phe_linh` (Tạ Vô Ưu, drains more at 2, Phong ấn at 3),
+`moc_linh_hoi_xuan` (Tô Thanh Liên, party heal, Cleanse at 2, Hộ tâm at 3). The companions are
+defined in data but join in later chapters.
 
 ### 4.3 Breaking a charge
 
@@ -194,7 +198,7 @@ player always sees what is coming and when.
 
 ---
 
-## 5. Trận pháp (formations) ✅ core / 🟡 content (4 of 6 in data)
+## 5. Trận pháp (formations) ✅ core / ✅ content (6 of 6 in data)
 
 ### 5.1 Setup
 
@@ -230,7 +234,7 @@ boundary (`cycle_pulse`). Energy is capped at the last threshold.
 Requires phase ≥ 1. Applies the release effects with `power × phase`, then resets energy and phase
 to 0. Use it as an emergency burst or to cash in before a node breaks.
 
-### 5.6 Formation catalogue (minimum 6; 4 implemented)
+### 5.6 Formation catalogue (minimum 6; all implemented)
 
 | ID | Name | Members | Thresholds | Identity |
 |----|------|---------|------------|----------|
@@ -238,12 +242,12 @@ to 0. Use it as an emergency burst or to cash in before a node breaks.
 | `tam_tai_kiem_tran` | **Tam Tài Kiếm Trận** | 3 | 3 / 6 / 9 | Synchronised swords: P1 aura +15 % Công; P2 pulse 60 % Công strike from every node; P3 pulse 3 hits. Release: big multi-hit ✅ data |
 | `ngu_hanh_tran` | **Ngũ Hành Tương Sinh Trận** | 2+, ≥2 elements | 3 / 6 | Resource cycling: P1 aura +4 Linh lực regen; Tương sinh combos give +2 energy. Release: restore 40 % Linh lực to all ✅ data |
 | `pha_linh_tran` | **Phá Linh Trận** | 2+ | 3 / 6 | Anti-shield/anti-caster: P1 aura attacks remove 1 shield layer; P2 pulse interrupts all channels. Release: Phá giáp + Phong ấn all enemies ✅ data |
-| `luong_nghi_tran` | **Lưỡng Nghi Trận** | 2 | 2 / 4 | Swap & tempo: P1 aura Đổi vị trí costs 0 AP; P2 pulse Haste 200 to both. Release: pull both nodes to act next ⏳ |
-| `cuu_cung_me_tran` | **Cửu Cung Mê Trận** | 3+ | 4 / 8 | Illusion: P1 pulse Hư ảnh on back row; P2 pulse Chậm on all enemies. Release: decoys absorb next 2 attacks ⏳ |
+| `luong_nghi_tran` | **Lưỡng Nghi Trận** | 2 | 2 / 4 | Swap & tempo: P1 aura `FreeSwap` (Đổi vị trí costs 0 ĐHĐ for nodes); P2 pulse Haste 200 to the party. Release: Haste 900 (every node acts next) ✅ |
+| `cuu_cung_me_tran` | **Cửu Cung Mê Trận** | 3+ | 4 / 8 | Illusion: P1 pulse Hư ảnh on the back row (`StatusRow`); P2 pulse Chậm on all enemies. Release: Hư ảnh on every ally and Đẩy lùi 200 on every enemy ✅ |
 
 ---
 
-## 6. Pháp bảo (active artifacts) ✅ core / ✅ 12 in data (13th ⏳)
+## 6. Pháp bảo (active artifacts) ✅ core / ✅ 13 in data
 
 ### 6.1 Taxonomy and tiers
 
@@ -274,13 +278,20 @@ definition with its own cooldown and optional limited charges per battle), an el
 | `truy_phong_ngoa` | **Truy Phong Ngoa** | 1 | Thúc đẩy 300 on self or ally | +5 Thân pháp | Cooldown 3 | ✅ |
 | `bach_thao_dinh` | **Bách Thảo Đỉnh** | 3 | Windup 800: heal all 35 % + cleanse | – | Interruptible | ✅ |
 | `pha_son_an` | **Phá Sơn Ấn** | 3 | Stun if target is channelling, else 80 % Công Thổ damage | – | Kiên định | ✅ |
-| `chieu_hon_phien` | **Chiêu Hồn Phiên** | 3 | Summon a spirit that taunts for 2 activations | – | Area attacks | ⏳ |
+| `chieu_hon_phien` | **Chiêu Hồn Phiên** | 3 | Summon *Oán Hồn Vệ* (45 % of the user's Khí huyết, Thủ ×1.2) in Tiền with Khiêu khích; it fades after 2 of its activations | – | Area attacks ignore taunt; cooldown 4; one spirit per user | ✅ |
 
 ### 6.3 Rules
 
 - Active use costs AP and Linh lực like a technique; cooldowns tick at the owner's activation start.
 - `charges_per_battle` resets each battle.
 - Artifacts are handcrafted, unique and story-bound (no random duplicates).
+
+### 6.4 Summons ✅
+
+`Summon(id)` places a `SummonDef` unit on the user's side, in Tiền, at `clock + recovery / 2`. A
+summon never acts: on each of its activations it only counts down and fades at zero. It is not a
+formation node, never decides victory or defeat (a party of only summons is defeated), and a new
+summon replaces the user's previous one.
 
 ---
 
@@ -365,12 +376,13 @@ restores the generator, so outcomes are reproducible.
 | Channeller | **Chú sư** | Long telegraphed windups that must be interrupted, pushed or guarded | `da_tru`, `lang_dau` (and Đồ Cuồng's *Huyết Sát Trảm*) | ✅ |
 | Interrupter | **Kẻ ngắt quãng** | Reactive rule: punishes any unit at Tụ khí ≥ 2 with an `interrupt` dart | `lang_nha` | ✅ |
 | Formation breaker | **Phá trận sư** | *Phá Trận Quyền* drains formation energy when phase ≥ 1 | `do_cuong` | ✅ |
-| Shield guardian | **Hộ vệ** | Shields allies, taunts; weak to Phá Linh Trận | Thiết Giáp Vệ (Ch2) | ⏳ |
-| Drainer | **Kẻ hút linh** | Drains Linh lực; punishes long charges | Âm Hồn (Ch3) | ⏳ |
+| Shield guardian | **Hộ vệ** | Shields the ally that lacks a shield (`AllyLacks(Khien)`), taunts | `de_tu_ho_ve` (Ch2) | ✅ |
+| Drainer | **Kẻ hút linh** | Drains Linh lực; reacts to anyone holding Tụ khí with *Tỏa Linh* | `de_tu_hut_linh` (Ch2) | ✅ |
 | Illusionist | **Huyễn sư** | Hư ảnh on allies, Chậm on party | Tiết Mị Nương (Ch4) | ⏳ |
 
-The engine supports all seven (their conditions, targets and effects exist and are unit tested);
-four have shipped enemies. The target of six archetypes in content is **not yet met**.
+Six archetypes have shipped enemies (the Ch2 ones are simulated; their maps come with Chapter 2).
+The illusionist arrives with Tiết Mị Nương in Chapter 4, as the story bible places her; the engine
+already supports her kit (Hư ảnh, Chậm, `AllyLacks`).
 
 ### 8.2 AI
 
@@ -378,10 +390,12 @@ An enemy has an ordered list of rules `(when, technique, target, reactive)`.
 - At battle start and at the end of each of its activations it picks its **intent**: the first
   non-reactive rule whose condition holds (conditions: `Always`, `SelfHpBelow(%)`,
   `FoeCharging(stage)`, `FormationPhaseAtLeast(n)`, `EveryNth(n, offset)` on its own activation
-  count, `AllyHpBelow(%)`, `FoeHasShield`).
+  count, `AllyHpBelow(%)`, `FoeHasShield`, `AllyLacks(status)`; an ally-targeted rule with
+  `AllyLacks` picks the weakest ally that lacks the status).
 - At the start of its activation, a reactive rule whose condition now holds overrides the intent.
   Reactive rules are listed in the intent panel (“Phản ứng: …”), so the player is never surprised.
-- Targets: `Front`, `LowestHp`, `Charging`, `Channeling`, `FormationNode`, `Random`, `SelfUnit`, `AllFoes`.
+- Targets: `Front`, `LowestHp`, `Charging`, `Channeling`, `FormationNode`, `Random`, `SelfUnit`,
+  `AllFoes`, `LowestHpAlly`. Single-target attacks must pick a foe with Khiêu khích if one exists.
 
 ### 8.3 Encounter objectives
 
@@ -429,6 +443,23 @@ Latest results (`cargo test balance -- --nocapture`):
 
 Known gap: `ch1_lang_dem` runs longer than the 3–6 activation target for normal battles. It is a
 three-enemy pack that serves as the chapter's mid-boss.
+
+Chapter 2 encounters (`ch2_battles_reward_the_new_lessons`, hero at Luyện Khí hậu kỳ / đỉnh phong;
+not yet placed on maps, so they will be re-tuned when Chapter 2 is built):
+
+| Battle | Policy | Wins | HP left | Activations |
+|--------|--------|------|---------|-------------|
+| `ch2_moc_nhan_tran` (lesson) | patient (charge + Thủ thế) | 100 % | 50 % | 22 |
+| | greedy (charge without guarding) | 100 % | 20 % | 18 |
+| `ch2_tieu_ty_1` (guardian) | brawler / patient | 100 % / 100 % | 84 % / 88 % | 12 / 18 |
+| `ch2_tieu_ty_2` (drainer) | brawler / greedy | 100 % / 100 % | 69 % / 84 % | 8 / 8 |
+| `ch2_tieu_ty_3` (Âu Dương Liệt) | brawler / patient | 100 % / 100 % | 23 % / 22 % | 14 / 18 |
+| `ch2_thich_khach` (elite) | brawler | 100 % | 41 % | 9 |
+| `ch2_ho_ve_hut_linh` (party of 3) | ch2_party (summon, charge combos) / naive | 100 % / 100 % | 72 % / 90 % | 20 / 14 |
+
+Known gaps: the party fight is easy for a full party of three, and the drainer does not punish
+greedy charging as hard as intended. Both need another pass once Chapter 2's progression (items,
+companions joining) is fixed.
 
 Rules settled during balancing:
 - The party starts every battle at full Khí huyết and Linh lực (no attrition between battles in

@@ -257,7 +257,7 @@ impl BattleState {
         if self.is_over() {
             return true;
         }
-        let party_alive = self.party().any(|i| self.units[i].alive());
+        let party_alive = self.party().any(|i| self.units[i].fighting());
         let protected_down = self.protect.iter().any(|&i| !self.units[i].alive());
         if !party_alive || protected_down {
             self.phase = Phase::Defeat;
@@ -265,13 +265,13 @@ impl BattleState {
             return true;
         }
         let won = match &self.objective {
-            Objective::DefeatAll => self.enemies().all(|i| !self.units[i].alive()),
+            Objective::DefeatAll => self.enemies().all(|i| !self.units[i].fighting()),
             Objective::DefeatTarget(id) => self
                 .enemies()
                 .any(|i| &self.units[i].def == id && !self.units[i].alive()),
             Objective::Survive(cycles) => self.clock >= cycles * TICKS_PER_CYCLE,
             Objective::FormationPhase(n) => self.formation.as_ref().is_some_and(|f| f.phase >= *n),
-        } || self.enemies().all(|i| !self.units[i].alive());
+        } || self.enemies().all(|i| !self.units[i].fighting());
         if won {
             self.phase = Phase::Victory;
             self.log.push(LogEntry::Victory);
@@ -286,6 +286,18 @@ impl BattleState {
 
     fn start_activation(&mut self, db: &GameDb, i: usize) {
         self.log.push(LogEntry::Turn { unit: i });
+        // Summons only guard; they fade after their turns.
+        if let Some(mut s) = self.units[i].summon {
+            s.turns = s.turns.saturating_sub(1);
+            self.units[i].summon = Some(s);
+            if s.turns == 0 {
+                self.units[i].hp = 0;
+                self.units[i].statuses.clear();
+                self.log.push(LogEntry::Dissipated { unit: i });
+            }
+            self.end_activation(db, i);
+            return;
+        }
         let wards = self.aura_active(db, |a| matches!(a, FormationAura::WardEachActivation));
         let aura_regen: u32 = self.aura_sum(db, |a| match a {
             FormationAura::LlRegen(n) => *n,
@@ -360,7 +372,7 @@ impl BattleState {
     fn end_activation(&mut self, db: &GameDb, i: usize) {
         let party_node = self.units[i].side == Side::Party
             && !self.units[i].node_broken
-            && self.units[i].alive();
+            && self.units[i].fighting();
         {
             let u = &mut self.units[i];
             u.leftover_ap = u.ap.min(AP_CARRY_MAX);
@@ -562,7 +574,7 @@ impl BattleState {
                 Ok(())
             }
             Command::Swap(other) => {
-                need_ap(SWAP_AP)?;
+                need_ap(self.swap_cost(db, i))?;
                 let ok = *other != i
                     && self.units.get(*other).is_some_and(|o| {
                         o.side == Side::Party
@@ -777,7 +789,7 @@ impl BattleState {
                 self.log.push(LogEntry::NodeRestored { unit: i });
             }
             Command::Swap(other) => {
-                self.units[i].ap -= SWAP_AP;
+                self.units[i].ap -= self.swap_cost(db, i);
                 let (a, b) = (self.units[i].slot, self.units[other].slot);
                 self.units[i].slot = b;
                 self.units[other].slot = a;
@@ -1156,6 +1168,7 @@ impl BattleState {
             }
             BattleEffect::BreakNode => {
                 if self.units[t].side == Side::Party
+                    && self.units[t].summon.is_none()
                     && self.formation.is_some()
                     && !self.units[t].node_broken
                 {
@@ -1214,6 +1227,95 @@ impl BattleState {
                     unit: actor,
                     amount: gained,
                 });
+            }
+            BattleEffect::Summon(id) => {
+                if let Some(def) = db.summons.get(id).cloned() {
+                    self.summon(db, actor, &def);
+                }
+            }
+        }
+    }
+
+    /// Calls a spirit onto `owner`'s side, replacing its previous summon.
+    fn summon(&mut self, db: &GameDb, owner: usize, def: &SummonDef) {
+        for j in 0..self.units.len() {
+            if self.units[j].summon.is_some_and(|s| s.owner == owner) && self.units[j].alive() {
+                self.units[j].hp = 0;
+                self.log.push(LogEntry::Dissipated { unit: j });
+            }
+        }
+        // Start from the summoner so every field has a sane value.
+        let mut u = self.units[owner].clone();
+        u.def = def.id.clone();
+        u.sheet = def.sheet;
+        u.sprite = def.sprite.clone();
+        u.tint = def.tint;
+        u.stats = Stats {
+            hp: (u.stats.hp * def.hp_pct / 100).max(1),
+            ll: 0,
+            atk: 0,
+            spi: 0,
+            def: u.stats.def * def.def_pct / 100,
+            tp: u.stats.tp,
+        };
+        u.hp = u.stats.hp;
+        u.ll = 0;
+        u.element = Element::Vo;
+        u.element_override = None;
+        u.slot = Slot::Front;
+        u.charge = 0;
+        u.max_charge = 0;
+        u.statuses.clear();
+        u.skills.clear();
+        u.artifacts.clear();
+        u.stored_ll = 0;
+        u.store_cap = 0;
+        u.ll_regen_bonus = 0;
+        u.tp_bonus = 0;
+        u.channel = None;
+        u.intent = None;
+        u.own_activations = 0;
+        u.pushed = (0, 0);
+        u.push_resist = 0;
+        u.boss = false;
+        u.invulnerable = false;
+        u.guest = false;
+        u.node_broken = false;
+        u.shield_to_energy = false;
+        u.overheat = false;
+        u.pending_delay = 0;
+        u.pending_haste = 0;
+        u.ap = 0;
+        u.leftover_ap = 0;
+        u.summon = Some(SummonState {
+            turns: def.turns,
+            owner,
+        });
+        u.next_act = self.clock + recovery(u.stats.tp) / 2;
+        let index = self.units.len();
+        self.units.push(u);
+        if def.taunt {
+            // Outlasts the spirit so it guards until it fades.
+            self.add_status(index, StatusKind::KhieuKhich, def.turns + 1, 0, None);
+        }
+        self.log.push(LogEntry::Summoned { unit: index, owner });
+        // Telegraphed attacks that can no longer reach their target pick a new one.
+        let side = self.units[owner].side;
+        for f in 0..self.units.len() {
+            if self.units[f].side == side
+                || self.units[f].side != Side::Enemy
+                || !self.units[f].alive()
+            {
+                continue;
+            }
+            let stale = self.units[f].intent.as_ref().is_some_and(|it| {
+                it.target.is_some_and(|t| {
+                    db.skill(&it.skill)
+                        .is_some_and(|s| !self.valid_targets(f, s.target, s.melee).contains(&t))
+                })
+            });
+            if stale {
+                self.choose_intent(db, f);
             }
         }
     }
@@ -1464,6 +1566,16 @@ impl BattleState {
     // Formations (§5)
     // ------------------------------------------------------------------
 
+    /// Đổi vị trí is free for formation nodes under a `FreeSwap` aura.
+    pub fn swap_cost(&self, db: &GameDb, i: usize) -> u8 {
+        let node = self.units[i].side == Side::Party && !self.units[i].node_broken;
+        if node && self.aura_active(db, |a| matches!(a, FormationAura::FreeSwap)) {
+            0
+        } else {
+            SWAP_AP
+        }
+    }
+
     fn formation_def<'a>(&self, db: &'a GameDb) -> Option<&'a FormationDef> {
         self.formation
             .as_ref()
@@ -1472,7 +1584,7 @@ impl BattleState {
 
     /// Half or more of the living nodes broken (§5.4).
     pub fn formation_chaos(&self) -> bool {
-        let nodes: Vec<usize> = self.party().filter(|&i| self.units[i].alive()).collect();
+        let nodes: Vec<usize> = self.party().filter(|&i| self.units[i].fighting()).collect();
         let broken = nodes.iter().filter(|&&i| self.units[i].node_broken).count();
         !nodes.is_empty() && broken * 2 >= nodes.len().max(1) && broken > 0
     }
@@ -1558,7 +1670,8 @@ impl BattleState {
     }
 
     fn formation_effects(&mut self, effects: &[FormationEffect], scale: u32) {
-        let party: Vec<usize> = self.party().filter(|&i| self.units[i].alive()).collect();
+        // Summons are not formation nodes.
+        let party: Vec<usize> = self.party().filter(|&i| self.units[i].fighting()).collect();
         let enemies: Vec<usize> = self.enemies().filter(|&i| self.units[i].alive()).collect();
         for effect in effects {
             match effect {
@@ -1626,6 +1739,18 @@ impl BattleState {
                         self.add_status(e, *kind, *turns, 0, None);
                         self.log.push(LogEntry::Status {
                             target: e,
+                            status: *kind,
+                        });
+                    }
+                }
+                FormationEffect::StatusRow(slot, kind, turns) => {
+                    for &i in &party {
+                        if self.units[i].slot != *slot {
+                            continue;
+                        }
+                        self.add_status(i, *kind, *turns, 0, None);
+                        self.log.push(LogEntry::Status {
+                            target: i,
                             status: *kind,
                         });
                     }

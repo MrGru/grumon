@@ -402,7 +402,7 @@ fn unit_card(p: &mut ChildSpawnerCommands, session: &BattleSession, i: usize, ct
         if !lines.is_empty() {
             w.spawn((
                 Node {
-                    max_width: Val::Px(CARD_W + 40.0),
+                    max_width: Val::Px(CARD_W),
                     flex_direction: FlexDirection::Column,
                     padding: UiRect::axes(Val::Px(6.0), Val::Px(2.0)),
                     border_radius: BorderRadius::all(Val::Px(4.0)),

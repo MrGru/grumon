@@ -403,7 +403,7 @@ fn raid_blocks_leaving_the_village_until_the_battle() {
 }
 
 /// Writes saves that start inside Ch1 battles (quick: boar, slot 1: raid,
-/// slot 2: Lang Nha) and at dawn (slot 3), for
+/// slot 2: Lang Nha), at dawn (slot 3) and a Chapter 2 party battle (auto), for
 /// checking them in the running game:
 /// `QA_SAVE_DIR=/tmp/qa cargo test export_qa_saves -- --ignored`, then run the
 /// game with `THIEN_MENH_SAVE_DIR=/tmp/qa` and load a slot.
@@ -468,6 +468,26 @@ fn export_qa_saves() {
         Path::new(&dir),
         SaveSlot::Manual(3),
         &SaveFile::new(&dawn, None, None),
+    )
+    .expect("write save");
+    // Autosave slot: a Chapter 2 party battle (hero, Diệp Hàn Sương, Tạ Vô Ưu) to see
+    // companions, the Oán Hồn Vệ summon and the Ch2 enemies in the battle UI.
+    let mut ch2 = dawn.clone();
+    for m in &mut ch2.party {
+        m.stage = 3;
+    }
+    ch2.apply_all(
+        &[
+            StoryEffect::JoinParty("diep_han_suong".into()),
+            StoryEffect::JoinParty("ta_vo_uu".into()),
+        ],
+        &s.db,
+    );
+    let battle = BattleState::from_progress(&s.db, &ch2, "ch2_ho_ve_hut_linh", 7).expect("battle");
+    write_save(
+        Path::new(&dir),
+        SaveSlot::Auto,
+        &SaveFile::new(&ch2, None, Some(battle)),
     )
     .expect("write save");
 }

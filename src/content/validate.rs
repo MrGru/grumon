@@ -232,10 +232,14 @@ impl Checker<'_> {
 
     fn battle_effects(&mut self, effects: &[BattleEffect], ctx: &str) {
         for effect in effects {
-            if let BattleEffect::Damage { hits, .. } = effect
-                && *hits == 0
-            {
-                self.err(format!("{ctx}: damage with 0 hits"));
+            match effect {
+                BattleEffect::Damage { hits: 0, .. } => {
+                    self.err(format!("{ctx}: damage with 0 hits"));
+                }
+                BattleEffect::Summon(id) if !self.db.summons.contains_key(id) => {
+                    self.err(format!("{ctx}: unknown summon `{id}`"));
+                }
+                _ => {}
             }
         }
     }
@@ -366,6 +370,13 @@ pub fn validate(db: &GameDb, locale: &Locale, ext: &ExternalRefs) -> Vec<String>
             c.err(format!(
                 "{ctx}: phase thresholds must be ascending and non-empty"
             ));
+        }
+    }
+    for summon in db.summons.values() {
+        let ctx = format!("summon `{}`", summon.id);
+        c.need_key(format!("summon.{}.name", summon.id), &ctx);
+        if summon.turns == 0 || summon.hp_pct == 0 {
+            c.err(format!("{ctx}: needs turns and hp_pct above 0"));
         }
     }
     for status in StatusKind::ALL {

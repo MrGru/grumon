@@ -12,12 +12,14 @@ Status legend: `[x]` done · `[~]` partly done (the note says what is missing) �
 ## Current state in one paragraph
 
 Milestone 1 is complete. Chapter 1 can be played from the prologue to the farewell at dawn: 5
-battles, 3 side quests, about 800 Vietnamese strings. Scripted playthrough tests cover the
-chapter, but only part of it has been checked by hand in the running game (see M2). The battle
-engine already implements every core system (timeline, ĐHĐ/Linh lực, Tụ khí, channels, push and
-pull, formations, artifacts, elements). Content counts are still below the targets (see M3). There
-music and sound are generated and not yet reviewed by ear, portraits are generated placeholders, and the
-tileset is the original Grumon placeholder.
+battles, 3 side quests, about 850 Vietnamese strings, generated music, sound effects and dialogue
+portraits. Scripted playthrough tests cover the whole chapter, and the chapter end, every battle
+type and saving inside dialogue and battle have been checked by hand in the running game. The battle
+engine implements every core system and the Milestone 3 content targets for combat are met
+(6 formations, 13 artifacts, 8 Tụ khí techniques, 6 enemy archetypes). Party management, equipment
+and item use work from the pause menu. Still missing: shops, alchemy and refinement (M3), Chapters
+2–8 (only Chapter 2's battle content exists), a listening pass on the audio, and a xianxia tileset
+to replace the original Grumon placeholder.
 
 ---
 
@@ -73,10 +75,11 @@ audio and portraits are present.
 |------|--------|-------|
 | Tụ khí stages 1–3 + Quá Tụ, breaking, Hộ tâm/Thủ thế protection | [x] | `charge_*`, `interrupter_breaks_charge_unless_warded`, `overcharge_costs_hp_and_backlashes` |
 | Channelled techniques, interrupts, push/pull with cap, stun immunity, no triple turns | [x] | core tests |
-| Formations: energy, phases, aura/pulse, node breaking, release | [x] engine / [~] content | 4 of 6 formations in data (`luong_nghi_tran`, `cuu_cung_me_tran` missing) |
-| Active artifacts with passives and limits | [x] engine / [x] content | 12 in data; the 13th (`chieu_hon_phien`) needs summons ⏳ |
-| Charge techniques | [~] | 3 of 8 (`pha_thach_quyen`, `nghich_menh_chi`, `kiem_phoi_tram`) |
-| Enemy archetypes that react to the systems | [~] | 4 of 6+ in data (assassin, channeller, interrupter, formation breaker) |
+| Formations: energy, phases, aura/pulse, node breaking, release | [x] | 6 of 6 in data; `FreeSwap` aura and `StatusRow` pulse for Lưỡng Nghi / Cửu Cung (`free_swap_aura_and_row_release`) |
+| Active artifacts with passives and limits | [x] | 13 in data; Chiêu Hồn Phiên summons a taunting spirit (`summon_taunts_then_fades_and_never_decides_the_battle`, `ch2_spirit_draws_the_blows`) |
+| Charge techniques | [x] (content) | 8 in data: 3 for the hero, 5 for the Ch2+ companions (defined in data, not yet joinable in story) |
+| Enemy archetypes that react to the systems | [x] 6 / [ ] 7th | Assassin, channeller, interrupter, formation breaker (Ch1) + guardian and drainer (Ch2 data, simulated). The illusionist comes with Ch4 |
+| Chapter 2 battle content | [~] | `ch2.data.ron`: Mộc Nhân, guardian, drainer, Âu Dương Liệt, assassin and six encounters, simulated in `ch2_battles_reward_the_new_lessons`; not placed on maps yet |
 | Three showcase battles, each with two viable approaches, and tests | [x] | `battle::balance_tests::showcase_*` |
 | Breakthrough events (major realms) | [~] | Mechanic done (`Breakthrough` item effect, `party::tests::breakthrough_needs_the_peak`); no breakthrough item or scene exists in content until Ch3 |
 | Party management UI (order, slots, formation choice) | [x] | `party::tests::*`; in-game: row change refused for the last front-row fighter, formation chosen from learned ones. Order swapping is tested in code only (Ch1 has a party of one) |
@@ -117,7 +120,7 @@ audio and portraits are present.
 
 - M2's audio and portraits block the "presentation" acceptance, not gameplay.
 - Party and equipment UI (M3) must land before Ch2, where a second permanent companion joins.
-- Remaining formations, charge techniques and archetypes (M3) are needed by the Ch2–Ch3 encounters.
+- Ch2 encounters exist in data and simulation; they need maps, a Ch2 battle background set, and a re-balance against Ch2's real progression.
 - An xianxia tileset is needed before building new Ch2 maps, to avoid rebuilding them.
 
 ## Risks

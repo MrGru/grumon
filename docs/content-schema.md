@@ -122,6 +122,8 @@ Delay(ticks)  Haste(ticks)      Interrupt             GainCharge(n)
 ConsumeChargeDamage(power_per_stage, scaling)          // Xích Viêm Châu
 BreakNode     FormationEnergy(n)                      SetElement(element, turns)
 StunIfChanneling(else_power)                          // Phá Sơn Ấn
+ReleaseStoredLl                                       // Tụ Linh Hồ Lô
+Summon(summon_id)                                     // Chiêu Hồn Phiên (§3.4b)
 ```
 
 ### 3.4 Artifact
@@ -135,6 +137,14 @@ Passives: `StoreLl(cap)`, `LlRegen(n)`, `SpeedBonus(n)`, `ShieldToEnergy`, `Boss
 live in the bag (`Progress.items`); the party tab moves them between the bag and members, limited
 by the realm's slots.
 
+### 3.4b Summon
+
+```ron
+summons: [(id: "oan_hon_ve", sheet: 8, tint: Some((0.55, 0.75, 1.0)), hp_pct: 45, def_pct: 120,
+           turns: 2, taunt: true)]
+```
+Name key: `summon.<id>.name`. Rules in game-systems §6.4.
+
 ### 3.5 Formation
 
 ```ron
@@ -146,6 +156,10 @@ by the realm's slots.
  ],
  release: [ShieldAllPct(10)])
 ```
+Pulses/releases: `ShieldAllPct`, `HealAllPct`, `CleanseAll`, `RestoreLlAllPct`, `StrikeAll(power)`,
+`InterruptAllEnemies`, `StatusAllEnemies(status, turns)`, `StatusAllAllies(status, turns)`,
+`StatusRow(Front|Middle|Back, status, turns)`, `HasteAll(ticks)`, `DelayAllEnemies(ticks)`.
+Auras: `WardEachActivation`, `AtkPct`, `DefPct`, `LlRegen`, `ComboEnergy`, `FreeSwap`.
 
 ### 3.6 Enemy
 
@@ -160,6 +174,10 @@ by the realm's slots.
  tu_vi: 40, drops: [("linh_lang_nanh", 1)], archetype: Interrupter)
 ```
 `sheet` uses the shared character sheets; `sprite: Some("path")` points to a dedicated image.
+AI conditions: `Always`, `SelfHpBelow(%)`, `FoeCharging(stage)`, `FoeChanneling`,
+`FormationPhaseAtLeast(n)`, `EveryNth(n, offset)`, `AllyHpBelow(%)`, `FoeHasShield`,
+`AllyLacks(status)`. Targets: `Front`, `LowestHp`, `Charging`, `Channeling`, `FormationNode`,
+`Random`, `SelfUnit`, `AllFoes`, `LowestHpAlly`.
 
 ### 3.7 Encounter
 
@@ -174,11 +192,14 @@ by the realm's slots.
 ### 3.8 Character (playable / guest)
 
 ```ron
-(id: "ong_mac", sheet: 10, element: Moc,
- base: (hp: 220, ll: 80, atk: 14, spi: 24, def: 14, tp: 34), growth: (hp: 0, ...),
- skills: ["ong_mac_thanh_moc_cham"], artifacts: ["huyen_quy_thuan"])
+(id: "ta_vo_uu", sheet: 4, element: Hoa, slot: Middle,
+ base: (hp: 74, ll: 34, atk: 8, spi: 12, def: 4, tp: 40),
+ growth: (hp: 30, ll: 24, atk: 4, spi: 7, def: 2, tp: 6),
+ skills: ["hon_hoa_phe_linh"], artifacts: ["chieu_hon_phien"])
 ```
-The protagonist is `player`; its sheet comes from the save profile.
+The protagonist is `player`; its sheet comes from the save profile. `slot` (default `Front`) is the
+battle row a companion takes when joining; `JoinParty` sets the realm and stage to the
+protagonist's. `nghich_menh: true` allows Quá Tụ.
 
 ### 3.9 NPC
 

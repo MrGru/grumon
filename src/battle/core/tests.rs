@@ -20,7 +20,10 @@ const DATA: &str = r#"(
     (id: "fire", ap: 1, target: Enemy, element: Hoa, effects: [Damage(power: 100, scaling: Spi)]),
     (id: "wood", ap: 1, target: Enemy, element: Moc, effects: [Damage(power: 100, scaling: Spi)]),
     (id: "push", ap: 1, target: Enemy, effects: [Delay(300)]),
+    (id: "call_spirit", ap: 1, target: SelfOnly, effects: [Summon("spirit")]),
+    (id: "guard_ally", ap: 1, target: Ally, effects: [Shield(power: 50, flat: 10)]),
   ],
+  summons: [(id: "spirit", hp_pct: 50, turns: 2, taunt: true)],
   artifacts: [
     (id: "gourd", tier: 1, active: Some("release_ll"), charges_per_battle: Some(2), passives: [StoreLl(30)]),
     (id: "turtle", tier: 2, active: Some("shield"), passives: [ShieldToEnergy]),
@@ -31,10 +34,12 @@ const DATA: &str = r#"(
        (threshold: 4, pulse: [ShieldAllPct(15)]),
        (threshold: 6, pulse: [CleanseAll]),
      ], release: [ShieldAllPct(10)]),
+    (id: "pair", min_members: 2, phases: [(threshold: 2, aura: [FreeSwap])],
+     release: [StatusRow(Back, HuAnh, 0)]),
   ],
   characters: [
     (id: "player", sheet: 1, element: Tho, base: (hp: 100, ll: 40, atk: 20, spi: 10, def: 10, tp: 30),
-     skills: ["heavy", "fire", "wood", "push", "dart"], artifacts: ["gourd"], nghich_menh: true),
+     skills: ["heavy", "fire", "wood", "push", "dart", "call_spirit"], artifacts: ["gourd"], nghich_menh: true),
     (id: "elder", sheet: 10, element: Moc, base: (hp: 200, ll: 80, atk: 14, spi: 24, def: 14, tp: 34),
      skills: ["shield"], artifacts: ["turtle"]),
   ],
@@ -54,6 +59,9 @@ const DATA: &str = r#"(
      archetype: FormationBreaker),
     (id: "stunner", stats: (hp: 300, ll: 0, atk: 1, spi: 0, def: 0, tp: 200), skills: ["stun"],
      ai: [(when: Always, skill: "stun", target: Front)], archetype: Beast),
+    (id: "warden", stats: (hp: 100, ll: 0, atk: 5, spi: 0, def: 0, tp: 30), skills: ["guard_ally", "bite"],
+     ai: [(when: AllyLacks(Khien), skill: "guard_ally", target: LowestHpAlly),
+          (when: Always, skill: "bite", target: Front)], archetype: Guardian),
     (id: "boss", boss: true, invulnerable: true, stats: (hp: 500, ll: 0, atk: 10, spi: 0, def: 0, tp: 30),
      skills: ["bite"], ai: [(when: Always, skill: "bite", target: Front)], archetype: Channeler),
   ],
@@ -66,6 +74,9 @@ const DATA: &str = r#"(
      formation: Some("ward"), objective: FormationPhase(3), protect: ["elder"], background: "x"),
     (id: "stuns", enemies: [("stunner", Front)], objective: DefeatAll, background: "x"),
     (id: "survive", enemies: [("boss", Front)], objective: Survive(2), background: "x"),
+    (id: "pair_fight", enemies: [("dummy", Front)], guests: [(character: "elder", slot: Back)],
+     formation: Some("pair"), objective: DefeatAll, background: "x"),
+    (id: "wardens", enemies: [("warden", Front), ("dummy", Front)], objective: DefeatAll, background: "x"),
   ],
 )"#;
 
@@ -679,4 +690,115 @@ fn companion_member_uses_its_own_stats() {
     let b = BattleState::from_progress(&db, &p, "solo_dummy", 1).expect("battle");
     assert_eq!(b.party().count(), 2);
     assert_eq!(b.units[1].stats.hp, 200);
+}
+
+#[test]
+fn summon_taunts_then_fades_and_never_decides_the_battle() {
+    let db = db();
+    let mut b = battle(&db, "solo_dummy");
+    run_to_command(&db, &mut b);
+    let units = b.units.len();
+    b.execute(&db, Command::Skill("call_spirit".into(), Target::Myself))
+        .expect("summon");
+    assert_eq!(b.units.len(), units + 1);
+    let spirit = units;
+    assert!(b.units[spirit].has(StatusKind::KhieuKhich));
+    let dummy = enemy_of(&b);
+    assert_eq!(
+        b.valid_targets(dummy, TargetKind::Enemy, true),
+        vec![spirit],
+        "single-target attacks must hit the taunting spirit"
+    );
+    // Calling again replaces the first spirit.
+    b.units[0].ap = 3;
+    b.execute(&db, Command::Skill("call_spirit".into(), Target::Myself))
+        .expect("summon again");
+    assert!(!b.units[spirit].alive());
+    let spirit = spirit + 1;
+    b.execute(&db, Command::EndTurn).expect("end turn");
+    let mut faded = false;
+    for _ in 0..200 {
+        match b.phase {
+            Phase::Command(_) => b.execute(&db, Command::Guard).expect("guard"),
+            Phase::Running => b.step(&db),
+            _ => break,
+        }
+        if b.log.contains(&LogEntry::Dissipated { unit: spirit }) {
+            faded = true;
+            break;
+        }
+    }
+    assert!(faded, "the spirit fades after its turns");
+    assert!(
+        b.log
+            .iter()
+            .any(|e| matches!(e, LogEntry::Damage { target, .. } if *target == spirit)),
+        "the dummy attacked the spirit"
+    );
+    // A spirit alone does not keep the party in the fight.
+    let mut c = battle(&db, "solo_dummy");
+    run_to_command(&db, &mut c);
+    c.execute(&db, Command::Skill("call_spirit".into(), Target::Myself))
+        .expect("summon");
+    c.units[0].hp = 0;
+    assert!(c.check_end());
+    assert_eq!(c.phase, Phase::Defeat);
+}
+
+#[test]
+fn free_swap_aura_and_row_release() {
+    let db = db();
+    let mut b = battle(&db, "pair_fight");
+    run_to_command(&db, &mut b).expect("command");
+    let me = b
+        .party()
+        .find(|&i| b.units[i].def == "player")
+        .expect("player");
+    let elder = b
+        .party()
+        .find(|&i| b.units[i].def == "elder")
+        .expect("elder");
+    assert_eq!(b.swap_cost(&db, me), 1, "no aura before phase 1");
+    if let Some(f) = &mut b.formation {
+        f.energy = 2;
+        f.phase = 1;
+    }
+    assert_eq!(b.swap_cost(&db, me), 0, "Lưỡng Nghi aura makes swaps free");
+    b.execute(&db, Command::ReleaseFormation).expect("release");
+    assert!(
+        b.units[elder].has(StatusKind::HuAnh),
+        "back row gets Hư ảnh"
+    );
+    assert!(!b.units[me].has(StatusKind::HuAnh), "front row does not");
+}
+
+#[test]
+fn guardian_shields_the_ally_that_lacks_one() {
+    let db = db();
+    let mut b = battle(&db, "wardens");
+    let warden = b
+        .enemies()
+        .find(|&e| b.units[e].def == "warden")
+        .expect("warden");
+    let dummy = b
+        .enemies()
+        .find(|&e| b.units[e].def == "dummy")
+        .expect("dummy");
+    b.choose_intent(&db, warden);
+    let intent = b.units[warden].intent.clone().expect("intent");
+    assert_eq!(intent.skill, "guard_ally");
+    assert_eq!(intent.target, Some(warden), "lowest Khí huyết ally first");
+    b.units[warden].statuses.push(StatusInst {
+        kind: StatusKind::Khien,
+        turns: 0,
+        value: 30,
+        source: None,
+    });
+    b.choose_intent(&db, warden);
+    let intent = b.units[warden].intent.clone().expect("intent");
+    assert_eq!(
+        intent.target,
+        Some(dummy),
+        "then the ally still without a shield"
+    );
 }

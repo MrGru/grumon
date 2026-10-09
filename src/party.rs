@@ -289,6 +289,7 @@ mod tests {
             growth: Stats::default(),
             skills: vec![],
             artifacts: vec![],
+            slot: Slot::Front,
         };
         db.characters.insert(PLAYER_ID.into(), character(PLAYER_ID));
         db.characters.insert("lien".into(), character("lien"));

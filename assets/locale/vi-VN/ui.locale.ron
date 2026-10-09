@@ -289,6 +289,8 @@
     "log.push_resisted": "{target} đứng vững, không bị đẩy lùi.",
     "log.pulled": "Lượt của {target} đến sớm hơn {ticks} tích.",
     "log.ko": "{unit} gục ngã!",
+    "log.summoned": "{owner} triệu hồi {unit}.",
+    "log.dissipated": "{unit} tan biến.",
     "log.combo": "Tương sinh: {from} sinh {to}!",
     "log.formation_phase": "Trận pháp đạt tầng {phase}!",
     "log.node_broken": "Trận nhãn của {unit} bị đánh vỡ!",

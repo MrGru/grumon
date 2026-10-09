@@ -21,6 +21,7 @@ pub struct GameDb {
     pub objects: BTreeMap<String, ObjectDef>,
     pub chapters: BTreeMap<u8, ChapterDef>,
     pub levels: BTreeMap<String, LevelDef>,
+    pub summons: BTreeMap<String, SummonDef>,
 }
 
 fn insert_all<T>(
@@ -106,6 +107,13 @@ impl GameDb {
                 &mut errors,
             );
             insert_all("level", &mut db.levels, file.levels, |d| &d.id, &mut errors);
+            insert_all(
+                "summon",
+                &mut db.summons,
+                file.summons,
+                |d| &d.id,
+                &mut errors,
+            );
             for chapter in file.chapters {
                 if db.chapters.contains_key(&chapter.number) {
                     errors.push(format!("duplicate chapter {}", chapter.number));

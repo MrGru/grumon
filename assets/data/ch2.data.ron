@@ -1,0 +1,94 @@
+// Chương 2 — Ngoại Môn Phong Vân: battle content (docs/chapters/ch2-ngoai-mon-phong-van.md §4).
+// Maps, NPCs, dialogue and quests for Chapter 2 are not built yet; these encounters are
+// simulated by battle::balance_tests until the chapter places them.
+(
+    skills: [
+        // Mộc Nhân (training dummies): strike whoever is charging.
+        (id: "moc_nhan_go", ap: 1, target: Enemy, melee: true, element: Moc, effects: [Damage(power: 90)]),
+        (id: "moc_nhan_chan", ap: 1, target: Enemy, element: Moc, cooldown: 2,
+         effects: [Damage(power: 70, interrupt: true)]),
+        // Đệ tử hộ vệ (guardian): shields the weakest ally, taunts, hits slowly.
+        (id: "ho_ve_khien", ap: 1, target: Ally, element: Kim, cooldown: 2,
+         effects: [Shield(power: 90, flat: 30)]),
+        (id: "ho_ve_thach_thuc", ap: 1, target: SelfOnly, cooldown: 3,
+         effects: [Status(id: KhieuKhich, turns: 2), Status(id: ThuThe, turns: 1)]),
+        (id: "ho_ve_dap_khien", ap: 1, target: Enemy, melee: true, element: Kim, effects: [Damage(power: 95)]),
+        // Đệ tử hút linh (drainer): drinks Linh lực, worst for long charges.
+        (id: "hut_linh_chuong", ap: 1, target: Enemy,
+         effects: [Damage(power: 80, scaling: Spi), DrainLl(22)]),
+        (id: "hut_linh_toa", ap: 1, target: Enemy, cooldown: 2,
+         effects: [DrainLl(20), Status(id: Cham, turns: 1)]),
+        // Âu Dương Liệt: fire bursts that overheat him.
+        (id: "liet_quyen", ap: 1, target: Enemy, melee: true, element: Hoa, effects: [Damage(power: 120)]),
+        (id: "liet_xich_viem", ap: 1, target: Enemy, element: Hoa, windup: Some(500),
+         effects: [Damage(power: 240, scaling: Spi), Status(id: Bong, turns: 2)]),
+        (id: "liet_qua_nhiet", ap: 1, target: SelfOnly, cooldown: 4,
+         effects: [Status(id: CuongCong, turns: 2), Status(id: QuaNhiet, turns: 3)]),
+        // Thích khách áo đen (elite assassin): hunts the back row, poisons.
+        (id: "ao_den_phi_dao", ap: 1, target: Enemy, element: Kim,
+         effects: [Damage(power: 70), Status(id: Doc, turns: 2)]),
+        (id: "ao_den_am_sat", ap: 1, target: Enemy, element: Kim, cooldown: 3,
+         effects: [Damage(power: 80, hits: 2)]),
+        (id: "ao_den_doc_khoi", ap: 1, target: AllEnemies, cooldown: 4,
+         effects: [Status(id: Doc, turns: 2, chance: Some(70))]),
+    ],
+
+    enemies: [
+        (id: "moc_nhan", element: Moc, sheet: 9, tint: Some((0.78, 0.6, 0.42)),
+         stats: (hp: 300, ll: 0, atk: 22, spi: 0, def: 34, tp: 40),
+         skills: ["moc_nhan_chan", "moc_nhan_go"],
+         ai: [(when: FoeCharging(1), skill: "moc_nhan_chan", target: Charging, reactive: true),
+              (when: Always, skill: "moc_nhan_go", target: Front)],
+         tu_vi: 6, archetype: Interrupter),
+        (id: "de_tu_ho_ve", element: Kim, sheet: 4, tint: Some((0.7, 0.78, 0.9)),
+         stats: (hp: 380, ll: 30, atk: 24, spi: 14, def: 26, tp: 38),
+         skills: ["ho_ve_khien", "ho_ve_thach_thuc", "ho_ve_dap_khien"],
+         ai: [(when: AllyLacks(Khien), skill: "ho_ve_khien", target: LowestHpAlly),
+              (when: EveryNth(3, 0), skill: "ho_ve_thach_thuc", target: SelfUnit),
+              (when: Always, skill: "ho_ve_dap_khien", target: Front)],
+         tu_vi: 18, archetype: Guardian),
+        (id: "de_tu_hut_linh", element: Vo, sheet: 8, tint: Some((0.6, 0.72, 1.0)),
+         stats: (hp: 420, ll: 60, atk: 16, spi: 28, def: 18, tp: 52),
+         skills: ["hut_linh_toa", "hut_linh_chuong"],
+         ai: [(when: FoeCharging(1), skill: "hut_linh_toa", target: Charging, reactive: true),
+              (when: Always, skill: "hut_linh_chuong", target: LowestHp)],
+         tu_vi: 18, archetype: Drainer),
+        (id: "au_duong_liet_dich", element: Hoa, sheet: 7, boss: true,
+         stats: (hp: 640, ll: 60, atk: 30, spi: 34, def: 16, tp: 48),
+         skills: ["liet_xich_viem", "liet_qua_nhiet", "liet_quyen"],
+         ai: [(when: EveryNth(3, 1), skill: "liet_xich_viem", target: LowestHp),
+              (when: SelfHpBelow(50), skill: "liet_qua_nhiet", target: SelfUnit),
+              (when: Always, skill: "liet_quyen", target: Front)],
+         tu_vi: 60, archetype: Channeler),
+        (id: "thich_khach_ao_den", element: Kim, sheet: 4, tint: Some((0.32, 0.3, 0.38)), boss: true,
+         stats: (hp: 480, ll: 0, atk: 30, spi: 0, def: 12, tp: 80),
+         skills: ["ao_den_doc_khoi", "ao_den_am_sat", "ao_den_phi_dao"],
+         ai: [(when: EveryNth(4, 3), skill: "ao_den_doc_khoi", target: AllFoes),
+              (when: EveryNth(3, 1), skill: "ao_den_am_sat", target: LowestHp),
+              (when: Always, skill: "ao_den_phi_dao", target: LowestHp)],
+         tu_vi: 70, archetype: Assassin),
+    ],
+
+    encounters: [
+        // Trương Mặc's lesson: an ironwood dummy that only a charged blow can crack, and that
+        // strikes whoever charges. Thủ thế keeps the charge; greed loses it.
+        (id: "ch2_moc_nhan_tran", enemies: [("moc_nhan", Front)],
+         objective: DefeatAll, background: "forest_day", can_flee: true,
+         hints: ["hint.ch2_moc_nhan_tran.1"]),
+        // Ngoại Môn Tiểu Tỷ, round 1: a shield guardian.
+        (id: "ch2_tieu_ty_1", enemies: [("de_tu_ho_ve", Front)], objective: DefeatAll,
+         background: "forest_day", hints: ["hint.ch2_tieu_ty_1.1"]),
+        // Round 2: a drainer.
+        (id: "ch2_tieu_ty_2", enemies: [("de_tu_hut_linh", Front)], objective: DefeatAll,
+         background: "forest_day", hints: ["hint.ch2_tieu_ty_2.1"]),
+        // Final: Âu Dương Liệt.
+        (id: "ch2_tieu_ty_3", enemies: [("au_duong_liet_dich", Front)], objective: DefeatAll,
+         background: "forest_day", hints: ["hint.ch2_tieu_ty_3.1"]),
+        // The guardian protecting a drainer: break the shield, or go through the taunt.
+        (id: "ch2_ho_ve_hut_linh", enemies: [("de_tu_ho_ve", Front), ("de_tu_hut_linh", Middle)],
+         objective: DefeatAll, background: "forest_day"),
+        // Đêm hậu sơn: the black-robed assassin.
+        (id: "ch2_thich_khach", enemies: [("thich_khach_ao_den", Front)], objective: DefeatAll,
+         background: "forest_night", hints: ["hint.ch2_thich_khach.1"]),
+    ],
+)

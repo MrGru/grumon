@@ -133,11 +133,25 @@ pub struct Unit {
     pub nghich_menh: bool,
     pub shield_to_energy: bool,
     pub overheat: bool,
+    /// A summoned spirit: activations left before it fades, and its summoner.
+    #[serde(default)]
+    pub summon: Option<SummonState>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SummonState {
+    pub turns: u8,
+    pub owner: usize,
 }
 
 impl Unit {
     pub fn alive(&self) -> bool {
         self.hp > 0
+    }
+
+    /// Alive and not a summon: the units that decide victory and defeat.
+    pub fn fighting(&self) -> bool {
+        self.alive() && self.summon.is_none()
     }
 
     pub fn status(&self, kind: StatusKind) -> Option<&StatusInst> {
@@ -264,6 +278,13 @@ pub enum LogEntry {
         ticks: u32,
     },
     Ko {
+        unit: usize,
+    },
+    Summoned {
+        unit: usize,
+        owner: usize,
+    },
+    Dissipated {
         unit: usize,
     },
     Combo {
@@ -428,6 +449,7 @@ fn unit_from_character(
         nghich_menh: def.nghich_menh,
         shield_to_energy: false,
         overheat: false,
+        summon: None,
     };
     for id in artifacts {
         let Some(art) = db.artifacts.get(id) else {
@@ -498,6 +520,7 @@ fn unit_from_enemy(def: &EnemyDef, slot: Slot) -> Unit {
         nghich_menh: false,
         shield_to_energy: false,
         overheat: false,
+        summon: None,
     }
 }
 

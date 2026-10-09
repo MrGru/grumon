@@ -26,6 +26,7 @@ impl BattleState {
                 .iter()
                 .any(|&a| self.units[a].hp_pct() < *pct),
             AiCond::FoeHasShield => foes.iter().any(|&f| self.units[f].shield() > 0),
+            AiCond::AllyLacks(kind) => self.allies_of(i).iter().any(|&a| !self.units[a].has(*kind)),
         }
     }
 
@@ -78,7 +79,11 @@ impl BattleState {
             TargetKind::AllAllies => return Some(Target::Allies),
             TargetKind::SelfOnly => return Some(Target::Myself),
             TargetKind::Ally => {
-                let allies = self.allies_of(i);
+                let mut allies = self.allies_of(i);
+                // A rule about a missing status targets an ally that lacks it.
+                if let AiCond::AllyLacks(kind) = rule.when {
+                    allies.retain(|&a| !self.units[a].has(kind));
+                }
                 return self.lowest_hp(&allies).map(Target::Unit);
             }
             TargetKind::Enemy => {}
