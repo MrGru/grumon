@@ -515,13 +515,27 @@ needs are not met is marked and ignored in battle.
 
 ---
 
-## 10. Economy and crafting ⏳ (Milestone 3)
+## 10. Economy and crafting ✅ (rules) / 🟡 (content)
 
-- **Luyện đan:** recipe = ingredients + cauldron + fire control minigame-free check
-  (`success = base + skill − difficulty`, deterministic with failure giving “Phế đan” byproduct).
-- **Luyện khí:** refine artifacts with ores; each upgrade unlocks a behaviour listed in the
-  artifact's upgrade path.
-- **Shops:** fixed stock per chapter, prices in đồng tiền (Ch1) or linh thạch.
+All rules live in `economy.rs` (pure, tested); the workshop screen (`workshop.rs`) opens through
+the `OpenShop(id)` and `OpenCraft(Alchemy|Forge)` story effects.
+
+- **Shops** ✅: a shop lists items with an optional price override and an optional *total* stock
+  (bought units are tracked per save, so a limited item never restocks). It buys the categories in
+  `buys` at `buy_pct` % of the item's price (default 50 %, at least 1 đồng); quest items are never
+  bought. Currency: đồng tiền (linh thạch arrives with the sect, Ch2+).
+- **Luyện đan** ✅: a known recipe consumes its ingredients and fuel money every time.
+  Quality = 60 + 10 × đan thuật level − difficulty (no randomness, no minigame): ≥ 90 gives one extra
+  unit (thượng phẩm), ≥ 50 succeeds, below 50 yields one **Phế đan**. Successful brews give
+  difficulty / 5 + 1 experience (failures 1); levels at 6 / 16 / 32 / 56 / 90 experience. The
+  screen shows the quality and the outcome before brewing.
+- **Luyện khí** ✅: each artifact has an ordered list of steps (materials + fee → gain). Gains:
+  `Power(%)` scales the active ability's damage, healing and shields (also when a channel resolves
+  later), `Cooldown(n)` shortens its cooldown, `Charges(n)` adds uses per battle. Levels are stored
+  per artifact id and applied when a battle starts.
+- Content: Ch1 has thím Ba's stall (cakes, one incense; buys materials) and ông Mạc's first recipe
+  (Thuốc Trị Thương) at his stove. Seven artifacts have refinement steps (Huyền Thiết comes from
+  Ch2+ shops and drops); in Ch1 the forge is only reachable with the debug key F3.
 - Inventory: stack limit 99, categories **Dược phẩm, Nguyên liệu, Pháp bảo, Nhiệm vụ**. ✅
 
 ---

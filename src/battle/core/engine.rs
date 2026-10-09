@@ -432,7 +432,7 @@ impl BattleState {
                     _ => None,
                 },
             });
-            self.resolve_skill(db, i, &skill, channel.target);
+            self.resolve_skill(db, i, &skill, channel.target, channel.power);
         }
         let half = recovery(self.tp_eff(i)) / 2;
         self.units[i].next_act = self.clock + half;
@@ -697,7 +697,7 @@ impl BattleState {
                 if let Some(slot) = self.units[i].skills.iter_mut().find(|s| s.id == id) {
                     slot.cooldown = skill.cooldown;
                 }
-                end = self.use_skill(db, i, &skill, target);
+                end = self.use_skill(db, i, &skill, target, 100);
             }
             Command::Guard => {
                 self.units[i].ap -= GUARD_AP;
@@ -740,7 +740,7 @@ impl BattleState {
                     return Err(Unavailable::Unknown);
                 };
                 let art = &mut self.units[i].artifacts[idx];
-                art.cooldown = skill.cooldown;
+                art.cooldown = skill.cooldown.saturating_sub(slot.cooldown_cut);
                 if let Some(c) = &mut art.charges {
                     *c -= 1;
                 }
@@ -748,7 +748,7 @@ impl BattleState {
                     unit: i,
                     artifact: slot.id.clone(),
                 });
-                end = self.use_skill(db, i, &skill, target);
+                end = self.use_skill(db, i, &skill, target, 100 + slot.power_pct);
             }
             Command::Item(id, target) => {
                 self.units[i].ap -= ITEM_AP;
@@ -832,6 +832,7 @@ impl BattleState {
         i: usize,
         skill: &SkillDef,
         target: Target,
+        power: u32,
     ) -> bool {
         {
             let u = &mut self.units[i];
@@ -847,6 +848,7 @@ impl BattleState {
                 skill: skill.id.clone(),
                 target,
                 resolve_at: at,
+                power,
             });
             self.units[i].next_act = at;
             self.log.push(LogEntry::Channel {
@@ -864,7 +866,7 @@ impl BattleState {
                 _ => None,
             },
         });
-        self.resolve_skill(db, i, skill, target);
+        self.resolve_skill(db, i, skill, target, power);
         skill.ends_turn
     }
 
@@ -889,7 +891,14 @@ impl BattleState {
         }
     }
 
-    fn resolve_skill(&mut self, db: &GameDb, i: usize, skill: &SkillDef, target: Target) {
+    fn resolve_skill(
+        &mut self,
+        db: &GameDb,
+        i: usize,
+        skill: &SkillDef,
+        target: Target,
+        power: u32,
+    ) {
         let stage = if skill.chargeable {
             std::mem::take(&mut self.units[i].charge)
         } else {
@@ -901,7 +910,7 @@ impl BattleState {
                 self.overcharge_releases += 1;
             }
         }
-        let mult = CHARGE_MULT[stage as usize];
+        let mult = CHARGE_MULT[stage as usize] * power / 100;
         let damages = skill.effects.iter().any(|e| {
             matches!(
                 e,

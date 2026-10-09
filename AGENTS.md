@@ -61,6 +61,8 @@ Set `THIEN_MENH_SAVE_DIR` to keep test saves out of your real save directory.
 | `src/character_creation.rs` | Name entry (Telex/IME), addressing, appearance, confirmation |
 | `src/telex.rs` | Built-in Telex input engine |
 | `src/main_menu.rs` | Title screen and load view |
+| `src/economy.rs` | Shops, Luyện đan and Luyện khí rules on `Progress` (pure, tested) |
+| `src/workshop.rs` | Workshop screen (`PlayState::Workshop`): shop buy/sell, alchemy, refinement |
 | `src/party.rs` | Party logic on `Progress` (pure): item use outside battle, breakthroughs, equip/unequip, battle rows, order, formation readiness |
 | `src/pause_menu/` | Pause menu: `mod.rs` tabs, submenus and `Settings`; `party_tab.rs` (rows, order, artifacts, formation); `inventory_tab.rs` (bag, item use) |
 | `src/hud.rs` | Notices, quest tracker, map banner, controls hint, chapter/story cards |
@@ -78,7 +80,7 @@ Set `THIEN_MENH_SAVE_DIR` to keep test saves out of your real save directory.
 | `src/ysort.rs` | Depth sorting by feet position |
 | `src/animation.rs` | Sprite-sheet animation, `Facing` |
 | `src/story_tests.rs` | Scripted Chapter 1 playthroughs (test only) |
-| `src/debug.rs` | Debug builds only: F1 inspector, F2 collision gizmos |
+| `src/debug.rs` | Debug builds only: F1 inspector, F2 collision gizmos, F3/F4 open the forge / alchemy screen |
 | `tools/` | `build_ch1_map.py` (LDtk placements), `gen_art.py` (art generator), `gen_audio.py` (music and sound generator), `gen_portraits.py` (dialogue portraits) |
 
 ## State machine
@@ -88,7 +90,7 @@ GameState:  Loading ──► Menu ──► CharacterCreation ──► Startin
                          ▲  └────────── (load save) ────────┘          │
                          └──────────────── (to title) ─────────────────┘
 PlayState (sub-state of Playing, starts in Transition):
-  Transition ──► Exploring ◄──► Dialogue | Battle | Paused | Card
+  Transition ──► Exploring ◄──► Dialogue | Battle | Paused | Card | Workshop
 ```
 
 Gate every gameplay system with `run_if(in_state(...))`. The player only moves in

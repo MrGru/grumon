@@ -17,6 +17,8 @@
         (id: "tu_khi_dan", category: Medicine, rarity: Uncommon, price: 40, field_use: [TuVi(40)]),
         // --- Materials ---
         (id: "thanh_tam_thao", category: Material, rarity: Common, price: 3),
+        (id: "phe_dan", category: Material, rarity: Common, price: 1),
+        (id: "huyen_thiet", category: Material, rarity: Uncommon, price: 15),
         (id: "linh_lang_nanh", category: Material, rarity: Uncommon, price: 10),
         (id: "da_tru_nanh", category: Material, rarity: Common, price: 4),
         (id: "go_dao", category: Material, rarity: Common, price: 0),
@@ -102,20 +104,36 @@
 
     artifacts: [
         (id: "tu_linh_ho_lo", tier: 1, active: Some("phong_linh"), charges_per_battle: Some(2),
-         passives: [StoreLl(30)]),
+         passives: [StoreLl(30)],
+         refine: [(materials: [("linh_lang_nanh", 2)], money: 20, gain: Charges(1)),
+                   (materials: [("huyen_thiet", 2)], money: 80, gain: Charges(1))]),
         (id: "huyen_quy_thuan", tier: 2, element: Thuy, active: Some("huyen_quy_ho_the"),
-         passives: [ShieldToEnergy]),
-        (id: "thanh_van_phi_kiem", tier: 2, element: Kim, active: Some("thanh_van_kiem_vu")),
-        (id: "tran_hon_linh", tier: 2, active: Some("tran_hon_chuong")),
+         passives: [ShieldToEnergy],
+         refine: [(materials: [("huyen_thiet", 1)], money: 40, gain: Power(25)),
+                   (materials: [("huyen_thiet", 3)], money: 120, gain: Cooldown(1))]),
+        (id: "thanh_van_phi_kiem", tier: 2, element: Kim, active: Some("thanh_van_kiem_vu"),
+         refine: [(materials: [("huyen_thiet", 1)], money: 40, gain: Power(20)),
+                   (materials: [("huyen_thiet", 2), ("linh_lang_nanh", 2)], money: 100, gain: Power(20))]),
+        (id: "tran_hon_linh", tier: 2, active: Some("tran_hon_chuong"),
+         refine: [(materials: [("huyen_thiet", 2)], money: 60, gain: Cooldown(1))]),
         (id: "ngu_hanh_ky", tier: 2, active: Some("ngu_hanh_doi_ky")),
         (id: "huyen_anh_kinh", tier: 2, element: Thuy, active: Some("huyen_anh_phan_than")),
-        (id: "xich_viem_chau", tier: 3, element: Hoa, active: Some("xich_viem_bao"), passives: [Overheat]),
+        (id: "xich_viem_chau", tier: 3, element: Hoa, active: Some("xich_viem_bao"), passives: [Overheat],
+         refine: [(materials: [("huyen_thiet", 2)], money: 80, gain: Power(25))]),
         (id: "ban_menh_kiem_phoi", tier: 4, element: Kim, active: Some("kiem_phoi_tram")),
         (id: "hon_dang", tier: 2, element: Hoa, active: Some("hon_dang_phe_anh")),
         (id: "truy_phong_ngoa", tier: 1, active: Some("truy_phong_bo"), passives: [SpeedBonus(5)]),
-        (id: "bach_thao_dinh", tier: 3, element: Moc, active: Some("bach_thao_luyen")),
+        (id: "bach_thao_dinh", tier: 3, element: Moc, active: Some("bach_thao_luyen"),
+         refine: [(materials: [("thanh_tam_thao", 4)], money: 60, gain: Power(30))]),
         (id: "pha_son_an", tier: 3, element: Tho, active: Some("pha_son_tran")),
-        (id: "chieu_hon_phien", tier: 3, element: Hoa, active: Some("chieu_hon_trieu")),
+        (id: "chieu_hon_phien", tier: 3, element: Hoa, active: Some("chieu_hon_trieu"),
+         refine: [(materials: [("huyen_thiet", 2)], money: 80, gain: Cooldown(1))]),
+    ],
+
+    recipes: [
+        // Ông Mạc's first lesson (Ch1): boar tusk and Thanh Tâm Thảo.
+        (id: "tri_thuong_tan", product: "thuoc_tri_thuong",
+         ingredients: [("thanh_tam_thao", 1), ("da_tru_nanh", 1)], difficulty: 20, money: 2),
     ],
 
     summons: [

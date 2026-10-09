@@ -27,6 +27,89 @@ pub struct DataFile {
     pub chapters: Vec<ChapterDef>,
     pub levels: Vec<LevelDef>,
     pub summons: Vec<SummonDef>,
+    pub shops: Vec<ShopDef>,
+    pub recipes: Vec<RecipeDef>,
+}
+
+// ---------------------------------------------------------------------------
+// Economy and crafting (game-systems §10)
+// ---------------------------------------------------------------------------
+
+/// A shop: what it sells (with optional limited stock) and which categories it buys.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ShopDef {
+    pub id: String,
+    pub sells: Vec<ShopEntry>,
+    #[serde(default)]
+    pub buys: Vec<ItemCategory>,
+    /// Percentage of an item's price paid when the shop buys it.
+    #[serde(default = "half")]
+    pub buy_pct: u32,
+}
+
+fn half() -> u32 {
+    50
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ShopEntry {
+    pub item: String,
+    /// Overrides the item's own price.
+    #[serde(default)]
+    pub price: Option<u32>,
+    /// Total units for sale over the whole game (`None` = unlimited).
+    #[serde(default)]
+    pub stock: Option<u32>,
+}
+
+/// A Luyện đan recipe. Quality = 60 + 10 × alchemy level − difficulty.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RecipeDef {
+    pub id: String,
+    pub product: String,
+    #[serde(default = "one_u32")]
+    pub count: u32,
+    pub ingredients: Vec<(String, u32)>,
+    pub difficulty: u32,
+    /// Đồng tiền for fuel and auxiliary herbs.
+    #[serde(default)]
+    pub money: u32,
+}
+
+fn one_u32() -> u32 {
+    1
+}
+
+/// One Luyện khí step of an artifact.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RefineStep {
+    pub materials: Vec<(String, u32)>,
+    #[serde(default)]
+    pub money: u32,
+    pub gain: RefineGain,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum RefineGain {
+    /// The active ability's damage, healing and shields grow by this percentage.
+    Power(u32),
+    /// The active ability's cooldown shrinks by this many activations.
+    Cooldown(u8),
+    /// More uses per battle (artifacts with limited charges).
+    Charges(u8),
+}
+
+/// Where crafting happens.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Station {
+    /// Luyện đan: brew known recipes.
+    Alchemy,
+    /// Luyện khí: refine owned artifacts.
+    Forge,
 }
 
 /// A battle summon (`BattleEffect::Summon`): a short-lived spirit on the
@@ -563,6 +646,9 @@ pub struct ArtifactDef {
     /// Bound to the protagonist (Bản Mệnh): cannot be given to companions.
     #[serde(default)]
     pub bound: bool,
+    /// Luyện khí steps, applied in order.
+    #[serde(default)]
+    pub refine: Vec<RefineStep>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -945,6 +1031,12 @@ pub enum StoryEffect {
     SetChapter(u8),
     /// Story music that overrides the map's track; `""` returns to the map music.
     Music(String),
+    /// Opens a shop screen (queued like a dialogue).
+    OpenShop(String),
+    /// Opens a crafting screen.
+    OpenCraft(Station),
+    /// The player can now brew this recipe.
+    LearnRecipe(String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

@@ -84,7 +84,9 @@ audio and portraits are present.
 | Breakthrough events (major realms) | [~] | Mechanic done (`Breakthrough` item effect, `party::tests::breakthrough_needs_the_peak`); no breakthrough item or scene exists in content until Ch3 |
 | Party management UI (order, slots, formation choice) | [x] | `party::tests::*`; in-game: row change refused for the last front-row fighter, formation chosen from learned ones. Order swapping is tested in code only (Ch1 has a party of one) |
 | Equipment UI (artifact slots by realm) | [x] | `party::tests::equipping_respects_slots_and_binding`; in-game: gourd unequipped to the bag and re-equipped |
-| Alchemy (Luyện đan), artifact refinement (Luyện khí), shops | [ ] | Designed in game-systems.md §10 |
+| Shops | [x] | `economy::tests::buying_respects_money_and_stock`, `selling_pays_half_and_refuses_quest_items`; in-game: bought a cake and sold a fang at thím Ba's stall |
+| Alchemy (Luyện đan) | [x] | `brewing_is_deterministic_and_improves_with_practice`, full playthrough brews at ông Mạc's stove; in-game: brewed Thuốc Trị Thương |
+| Artifact refinement (Luyện khí) | [x] rules / [~] content | `refining_steps_in_order_until_the_last`, `refinement_levels_reach_the_battle`; in-game screen via debug F3. No Ch1 station: it opens with the sect in Ch2 |
 | Balanced progression across chapters | [ ] | Only Ch1 is balanced |
 
 ## Milestone 4 — Chapters 2–4 ⏳

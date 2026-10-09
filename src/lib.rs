@@ -13,6 +13,7 @@ mod collision;
 pub mod content;
 mod debug;
 mod dialogue;
+mod economy;
 mod flow;
 mod hud;
 mod input;
@@ -31,6 +32,7 @@ mod story_tests;
 pub mod telex;
 mod transition;
 mod ui;
+mod workshop;
 mod ysort;
 
 /// Window title (also the game's name).
@@ -74,6 +76,8 @@ pub enum PlayState {
     Paused,
     /// Full-screen chapter or story card.
     Card,
+    /// Shop, alchemy or refinement screen.
+    Workshop,
 }
 
 pub struct GamePlugin;
@@ -111,6 +115,7 @@ impl Plugin for GamePlugin {
                 pause_menu::PauseMenuPlugin,
                 save::SavePlugin,
                 audio::GameAudioPlugin,
+                workshop::WorkshopPlugin,
                 screen_fx::ScreenFxPlugin,
                 debug::DebugPlugin,
             ));

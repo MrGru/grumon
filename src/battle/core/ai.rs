@@ -174,6 +174,6 @@ impl BattleState {
         if let Some(slot) = self.units[i].skills.iter_mut().find(|s| s.id == rule.skill) {
             slot.cooldown = skill.cooldown;
         }
-        self.use_skill(db, i, &skill, target);
+        self.use_skill(db, i, &skill, target, 100);
     }
 }

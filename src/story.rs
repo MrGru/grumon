@@ -98,6 +98,8 @@ pub enum Deferred {
     Warp { level: String, x: i32, y: i32 },
     Card(String),
     Autosave,
+    Shop(String),
+    Craft(Station),
 }
 
 /// Something worth telling the player about (rendered by the HUD).
@@ -118,6 +120,7 @@ pub enum Notice {
     StageUp(String, Realm, u8),
     Breakthrough(String, Realm),
     FormationLearned(String),
+    RecipeLearned(String),
     Custom(String),
 }
 
@@ -159,6 +162,18 @@ pub struct Progress {
     /// Formations the party can choose in the pause menu.
     #[serde(default)]
     pub formations_known: Vec<String>,
+    /// Luyện đan recipes the player can brew.
+    #[serde(default)]
+    pub recipes_known: Vec<String>,
+    /// Units bought from limited shop stock, keyed `shop/item`.
+    #[serde(default)]
+    pub shop_bought: BTreeMap<String, u32>,
+    /// Luyện khí level of each artifact (by id; artifacts are unique).
+    #[serde(default)]
+    pub artifact_levels: BTreeMap<String, u8>,
+    /// Luyện đan experience.
+    #[serde(default)]
+    pub alchemy_xp: u32,
 }
 
 impl Default for Progress {
@@ -180,6 +195,10 @@ impl Default for Progress {
             battles_fought: 0,
             music: None,
             formations_known: Vec::new(),
+            recipes_known: Vec::new(),
+            shop_bought: BTreeMap::new(),
+            artifact_levels: BTreeMap::new(),
+            alchemy_xp: 0,
         }
     }
 }
@@ -427,6 +446,14 @@ impl Progress {
             StoryEffect::SetChapter(n) => self.chapter = *n,
             StoryEffect::Music(track) => {
                 self.music = (!track.is_empty()).then(|| track.clone());
+            }
+            StoryEffect::OpenShop(id) => out.deferred.push(Deferred::Shop(id.clone())),
+            StoryEffect::OpenCraft(station) => out.deferred.push(Deferred::Craft(*station)),
+            StoryEffect::LearnRecipe(id) => {
+                if !self.recipes_known.contains(id) {
+                    self.recipes_known.push(id.clone());
+                    out.notices.push(Notice::RecipeLearned(id.clone()));
+                }
             }
         }
         out

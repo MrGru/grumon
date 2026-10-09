@@ -197,6 +197,14 @@ fn run_queue(
         QueuedAction::Deferred(Deferred::Autosave) => {
             saves.write(SaveRequest(SaveSlot::Auto));
         }
+        QueuedAction::Deferred(Deferred::Shop(id)) => {
+            commands.insert_resource(crate::workshop::WorkshopRequest::Shop(id));
+            next_state.set(PlayState::Workshop);
+        }
+        QueuedAction::Deferred(Deferred::Craft(station)) => {
+            commands.insert_resource(crate::workshop::WorkshopRequest::Craft(station));
+            next_state.set(PlayState::Workshop);
+        }
     }
 }
 

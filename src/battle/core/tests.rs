@@ -25,7 +25,9 @@ const DATA: &str = r#"(
   ],
   summons: [(id: "spirit", hp_pct: 50, turns: 2, taunt: true)],
   artifacts: [
-    (id: "gourd", tier: 1, active: Some("release_ll"), charges_per_battle: Some(2), passives: [StoreLl(30)]),
+    (id: "gourd", tier: 1, active: Some("release_ll"), charges_per_battle: Some(2), passives: [StoreLl(30)],
+     refine: [(materials: [], gain: Charges(1)), (materials: [], gain: Cooldown(1)),
+              (materials: [], gain: Power(50))]),
     (id: "turtle", tier: 2, active: Some("shield"), passives: [ShieldToEnergy]),
   ],
   formations: [
@@ -800,5 +802,23 @@ fn guardian_shields_the_ally_that_lacks_one() {
         intent.target,
         Some(dummy),
         "then the ally still without a shield"
+    );
+}
+
+#[test]
+fn refinement_levels_reach_the_battle() {
+    let db = db();
+    let mut p = progress(&db);
+    p.artifact_levels.insert("gourd".into(), 3);
+    let b = BattleState::from_progress(&db, &p, "solo_dummy", 1).expect("battle");
+    let slot = &b.units[0].artifacts[0];
+    assert_eq!(slot.charges, Some(3), "Charges(1) adds a use");
+    assert_eq!(slot.cooldown_cut, 1);
+    assert_eq!(slot.power_pct, 50);
+    p.artifact_levels.insert("gourd".into(), 1);
+    let b = BattleState::from_progress(&db, &p, "solo_dummy", 1).expect("battle");
+    assert_eq!(
+        b.units[0].artifacts[0].power_pct, 0,
+        "only reached steps apply"
     );
 }

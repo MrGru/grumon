@@ -156,6 +156,7 @@
     "dlg.ch1_ong_mac_herbs.t1": "Cảm ơn cái gì. Cầm lấy, ông cho ít tiền ra lễ mua bánh.",
     "dlg.ch1_ong_mac_herbs.d1": "Thì con sống tiếp. Sống cho đàng hoàng, thế là đủ.",
     "dlg.ch1_ong_mac_herbs.d2": "Ông Mạc nhìn ra cửa sổ, về phía dãy núi phương bắc, rất lâu.",
+    "dlg.ch1_ong_mac_herbs.recipe": "À, còn cái này. Thừa cỏ Thanh Tâm với nanh lợn rừng thì đem ra bếp thuốc trước nhà mà sắc thành thuốc trị thương. Lửa liu riu thôi, nóng vội là hỏng cả nồi.",
     "dlg.ch1_ong_mac_herbs.end": "Trời ngả chiều rồi. Ra bến đi, lễ sắp bắt đầu. Ông ở nhà sắc thuốc cho bà Tư.",
 
     "dlg.ch1_ong_mac_dusk.start": "Còn đứng đây làm gì? Ra bến đi, con bé Liên đợi đấy.",
@@ -218,6 +219,13 @@
     "dlg.ch1_thim_ba_fish_return.start": "Ôi con cá béo chưa kìa! Ngoan, ngoan lắm.",
     "dlg.ch1_thim_ba_fish_return.f2": "Cầm lấy mấy cái bánh đậu xanh, với gói hương mê này. Hồi trẻ thím đi rừng, đốt nó lên là thú dữ cũng ngủ gật.",
     "dlg.ch1_thim_ba_after.start": "Chiều ra bến nhớ ghé ăn bát cháo. Thím để phần cho bát to nhất.",
+    "dlg.ch1_thim_ba_after.ask": "Mà có mua gì không? Bánh đậu xanh thím mới hấp, còn nóng hổi.",
+    "dlg.ch1_thim_ba_after.ask.buy": "Cho con xem hàng.",
+    "dlg.ch1_thim_ba_after.ask.bye": "Dạ thôi, con đi đây.",
+    "dlg.ch1_thim_ba_fish_wait.ask": "Tiện thể mua gì thì mua luôn đi, thím đang bận tối mắt.",
+    "dlg.ch1_thim_ba_fish_wait.ask.buy": "Cho con xem hàng.",
+    "dlg.ch1_thim_ba_fish_wait.ask.bye": "Dạ thôi, con đi lấy cá đây.",
+    "shop.ch1_quan_thim_ba.name": "Quán thím Ba",
 
     "dlg.ch1_nam_fish.start": "Thím Ba sai đi xin cá hả? Hà hà, bà ấy mà dặn thì ai dám không cho.",
     "dlg.ch1_nam_fish.n2": "Đây, con cá chép suối béo nhất sáng nay. Bảo bà ấy bớt mắng tôi đi nhé.",

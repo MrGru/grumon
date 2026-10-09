@@ -258,7 +258,10 @@ fn ui_sounds(
 ) {
     let menu_like = match (game.get(), play.as_deref().map(State::get)) {
         (GameState::Menu | GameState::CharacterCreation, _) => true,
-        (GameState::Playing, Some(PlayState::Paused | PlayState::Dialogue)) => true,
+        (
+            GameState::Playing,
+            Some(PlayState::Paused | PlayState::Dialogue | PlayState::Workshop),
+        ) => true,
         (GameState::Playing, Some(PlayState::Battle)) => battle.is_some_and(|b| {
             b.state.is_over() || matches!(b.state.phase, crate::battle::core::Phase::Command(_))
         }),

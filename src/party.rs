@@ -277,6 +277,7 @@ mod tests {
                     charges_per_battle: None,
                     passives: vec![],
                     bound,
+                    refine: vec![],
                 },
             );
         }

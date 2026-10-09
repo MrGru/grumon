@@ -221,6 +221,17 @@ impl Checker<'_> {
                 | StoryEffect::TimeOfDay(_)
                 | StoryEffect::SetFormation(None)
                 | StoryEffect::SetChapter(_) => {}
+                StoryEffect::OpenShop(id) => {
+                    if !self.db.shops.contains_key(id) {
+                        self.err(format!("{ctx}: unknown shop `{id}`"));
+                    }
+                }
+                StoryEffect::LearnRecipe(id) => {
+                    if !self.db.recipes.contains_key(id) {
+                        self.err(format!("{ctx}: unknown recipe `{id}`"));
+                    }
+                }
+                StoryEffect::OpenCraft(_) => {}
                 StoryEffect::Music(track) => {
                     if !track.is_empty() {
                         self.music(track, ctx);
@@ -370,6 +381,31 @@ pub fn validate(db: &GameDb, locale: &Locale, ext: &ExternalRefs) -> Vec<String>
             c.err(format!(
                 "{ctx}: phase thresholds must be ascending and non-empty"
             ));
+        }
+    }
+    for shop in db.shops.values() {
+        let ctx = format!("shop `{}`", shop.id);
+        c.need_key(format!("shop.{}.name", shop.id), &ctx);
+        for entry in &shop.sells {
+            c.item(&entry.item, &ctx);
+        }
+    }
+    for recipe in db.recipes.values() {
+        let ctx = format!("recipe `{}`", recipe.id);
+        c.need_key(format!("recipe.{}.name", recipe.id), &ctx);
+        c.item(&recipe.product, &ctx);
+        for (item, n) in &recipe.ingredients {
+            c.item(item, &ctx);
+            if *n == 0 {
+                c.err(format!("{ctx}: ingredient `{item}` with count 0"));
+            }
+        }
+    }
+    for artifact in db.artifacts.values() {
+        for step in &artifact.refine {
+            for (item, _) in &step.materials {
+                c.item(item, &format!("artifact `{}` refinement", artifact.id));
+            }
         }
     }
     for summon in db.summons.values() {

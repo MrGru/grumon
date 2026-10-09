@@ -230,6 +230,14 @@ pub fn notice_text(notice: &Notice, content: &Content, progress: &Progress) -> S
                 ("realm", content.text(realm.key(), progress)),
             ],
         ),
+        Notice::RecipeLearned(id) => content.format(
+            "notice.recipe_learned",
+            progress,
+            &[(
+                "recipe",
+                content.text(&format!("recipe.{id}.name"), progress),
+            )],
+        ),
         Notice::FormationLearned(id) => content.format(
             "notice.formation_learned",
             progress,
@@ -269,7 +277,8 @@ fn notice_sound(notice: &Notice) -> Option<&'static str> {
         Notice::SkillLearned(..)
         | Notice::StageUp(..)
         | Notice::Breakthrough(..)
-        | Notice::FormationLearned(_) => Some(sound::FORMATION),
+        | Notice::FormationLearned(_)
+        | Notice::RecipeLearned(_) => Some(sound::FORMATION),
         Notice::ItemUsed(_) => Some(sound::HEAL),
         Notice::Custom(key) if key.contains("saved") => Some(sound::SAVE),
         Notice::QuestFailed(_) | Notice::ItemLost(..) | Notice::Left(_) => Some(sound::UI_CANCEL),

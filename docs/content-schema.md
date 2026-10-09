@@ -249,7 +249,7 @@ Dialogue(id)   Battle(encounter_id)   Warp(level, x, y)   Card(chapter_key)
 JoinParty(id)  LeaveParty(id)  LearnSkill(member, skill)  GiveArtifact(member, artifact)
 Trust(character, n)   GainTuVi(n)   SetRealm(realm, stage)   SetFormation(Some(id)|None)
 HealParty   Autosave   TimeOfDay(Day|Dusk|Night|Raid|Dawn)   Notify(key)   SetChapter(n)
-Music(track | "")   LearnFormation(id)
+Music(track | "")   LearnFormation(id)   OpenShop(id)   OpenCraft(Alchemy|Forge)   LearnRecipe(id)
 ```
 `Dialogue`, `Battle`, `Warp` and `Card` are *queued* and start after the current dialogue closes.
 
@@ -301,6 +301,21 @@ levels: [(id: "Village", music: "village",
 Tracks are file stems in `assets/audio/music/`. An encounter may set `music: Some("raid")`
 (default: `boss` if any enemy is a boss, else `battle`). The story effect `Music("sorrow")`
 overrides the map music until `Music("")`.
+
+### 3.16 Shops, recipes and refinement
+
+```ron
+shops: [(id: "ch1_quan_thim_ba", buys: [Material], buy_pct: 50,
+         sells: [(item: "banh_dau_xanh", stock: Some(6)), (item: "khoi_me_huong", price: Some(12))])],
+recipes: [(id: "tri_thuong_tan", product: "thuoc_tri_thuong", count: 1,
+           ingredients: [("thanh_tam_thao", 1), ("da_tru_nanh", 1)], difficulty: 20, money: 2)],
+// on an artifact:
+refine: [(materials: [("linh_lang_nanh", 2)], money: 20, gain: Charges(1)),
+         (materials: [("huyen_thiet", 2)], money: 80, gain: Power(25))]
+```
+Names: `shop.<id>.name`, `recipe.<id>.name`. Effects: `OpenShop(id)`, `OpenCraft(Alchemy|Forge)`,
+`LearnRecipe(id)`. Save fields: `recipes_known`, `shop_bought` (`shop/item` → units),
+`artifact_levels`, `alchemy_xp`. Rules: game-systems §10.
 
 ## 4. Chapters
 

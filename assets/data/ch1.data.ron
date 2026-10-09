@@ -303,6 +303,9 @@
          when: Some(TimeIs(Dawn)), effects: [Dialogue("ch1_grave")]),
         (id: "ch1_lenh_bai", sheet: Objects, sprite: Some((0, 0, 16, 16)), once: true,
          when: Some(TimeIs(Dawn)), effects: [Dialogue("ch1_token")]),
+        // Ông Mạc's medicine stove: brew the recipe he teaches (before the raid).
+        (id: "ch1_bep_thuoc", sheet: Objects, sprite: Some((64, 0, 16, 16)), solid: true,
+         when: Some(NotFlag("ch1.raid_started")), effects: [OpenCraft(Alchemy)]),
         // Ông Mạc's medicine jar survived the fire.
         (id: "ch1_hu_thuoc", sheet: Objects, sprite: Some((96, 0, 16, 16)), once: true,
          when: Some(All([TimeIs(Dawn), Flag("ch1.awakened")])), effects: [Dialogue("ch1_hu_thuoc")]),
@@ -370,9 +373,10 @@
                 (id: "thanks", next: Some("t1")),
                 (id: "doubt", next: Some("d1")),
             ]),
-            "t1": Line(speaker: Some("ong_mac"), next: Some("end"), effects: [Trust("ong_mac", 1)]),
+            "t1": Line(speaker: Some("ong_mac"), next: Some("recipe"), effects: [Trust("ong_mac", 1)]),
             "d1": Line(speaker: Some("ong_mac"), next: Some("d2")),
-            "d2": Line(next: Some("end")),
+            "d2": Line(next: Some("recipe")),
+            "recipe": Line(speaker: Some("ong_mac"), next: Some("end"), effects: [LearnRecipe("tri_thuong_tan")]),
             "end": Line(speaker: Some("ong_mac"), next: None,
                         effects: [TimeOfDay(Dusk), SetFlag("ch1.dusk", 1)]),
         }),
@@ -457,7 +461,11 @@
             "t3": Line(speaker: Some("thim_ba"), next: None, effects: [StartQuest("ch1_chao_ca")]),
         }),
         (id: "ch1_thim_ba_fish_wait", nodes: {
-            "start": Line(speaker: Some("thim_ba"), next: None),
+            "start": Line(speaker: Some("thim_ba"), next: Some("ask")),
+            "ask": Choice(speaker: Some("thim_ba"), options: [
+                (id: "buy", effects: [OpenShop("ch1_quan_thim_ba")]),
+                (id: "bye"),
+            ]),
         }),
         (id: "ch1_thim_ba_fish_return", nodes: {
             "start": Line(speaker: Some("thim_ba"), next: Some("f2"),
@@ -465,7 +473,11 @@
             "f2": Line(speaker: Some("thim_ba"), next: None),
         }),
         (id: "ch1_thim_ba_after", nodes: {
-            "start": Line(speaker: Some("thim_ba"), next: None),
+            "start": Line(speaker: Some("thim_ba"), next: Some("ask")),
+            "ask": Choice(speaker: Some("thim_ba"), options: [
+                (id: "buy", effects: [OpenShop("ch1_quan_thim_ba")]),
+                (id: "bye"),
+            ]),
         }),
         (id: "ch1_nam_fish", nodes: {
             "start": Line(speaker: Some("chu_nam"), next: Some("n2")),
@@ -790,5 +802,11 @@
         (id: "ch1_ly_duc_after", nodes: {
             "start": Line(speaker: Some("ly_duc"), next: None),
         }),
+    ],
+
+    shops: [
+        // Thím Ba's stall, open until the raid.
+        (id: "ch1_quan_thim_ba", buys: [Material],
+         sells: [(item: "banh_dau_xanh", stock: Some(6)), (item: "khoi_me_huong", stock: Some(1))]),
     ],
 )
