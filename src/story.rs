@@ -91,7 +91,7 @@ impl Member {
 }
 
 /// Deferred action produced by an effect; executed by the ECS layer in order.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Deferred {
     Dialogue(String),
     Battle(String),

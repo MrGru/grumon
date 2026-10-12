@@ -1176,7 +1176,7 @@ pub fn animate_popups(
     let Ok(layer) = layer.single() else {
         return;
     };
-    let new: Vec<_> = session.popups.drain(..).collect();
+    let new = std::mem::take(&mut session.popups);
     for (unit, text, kind, _) in new {
         let pos = card_pos(&session.state, unit);
         let color = match kind {

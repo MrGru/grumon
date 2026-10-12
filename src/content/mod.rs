@@ -375,6 +375,9 @@ mod tests {
                     stack.push(path);
                     continue;
                 }
+                if path.extension().is_none_or(|ext| ext != "rs") {
+                    continue;
+                }
                 let text = std::fs::read_to_string(&path).expect("source readable");
                 // Test modules use made-up keys.
                 let text = text.split("#[cfg(test)]").next().unwrap_or_default();

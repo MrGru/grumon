@@ -380,8 +380,15 @@ into place. Loading falls back to `.bak` when the main file is missing or corrup
   "summary": { "player_name": "Lâm Vô Trần", "chapter": 1, "level": "Forest", "play_time": 1234, "realm": "luyen_khi", "stage": 0 },
   "progress": { "profile": {...}, "flags": {...}, "inventory": {...}, "quests": {...}, "party": {...}, "money": 0, "level": "Forest", "feet": [100, 200] },
   "dialogue": null | { "dialogue": "ch1_lien_bridge", "node": "ask" },
-  "battle": null | { ...BattleState... }
+  "battle": null | { ...BattleState... },
+  "pending_actions": [ ...QueuedAction... ]
 }
 ```
+`pending_actions` preserves deferred story actions in order, after resuming the active dialogue or
+battle. It defaults to an empty list for older v1 saves. A completed battle is kept until the player
+confirms its result, so loading cannot discard unclaimed rewards. Retrying a loaded battle rebuilds
+its initial state from the pre-battle progress. Saves are captured after gameplay updates, and the
+action queue waits on a save frame to avoid removing a pending action before the snapshot.
+
 `version` is bumped on breaking changes; `save::migrate(serde_json::Value)` upgrades older files step
 by step before deserialising. Unknown future versions are refused with a Vietnamese error message.

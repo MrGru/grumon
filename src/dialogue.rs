@@ -45,11 +45,12 @@ pub struct DialogueSession {
     /// (option id, resolved text) of visible choices.
     options: Vec<(String, String)>,
     cursor: usize,
+    finished: bool,
 }
 
 impl DialogueSession {
     pub fn snapshot(&self) -> Option<DialogueSnapshot> {
-        Some(DialogueSnapshot {
+        (!self.finished).then(|| DialogueSnapshot {
             dialogue: self.dialogue.clone(),
             node: self.node.clone(),
         })
@@ -238,6 +239,7 @@ fn open_dialogue(
             let mut session = DialogueSession {
                 dialogue: id,
                 node: String::new(),
+                finished: false,
                 revealed: 0.0,
                 text: String::new(),
                 speaker: None,
@@ -380,7 +382,10 @@ fn advance_dialogue(
     };
     match walk(&def, next.as_deref(), &mut story, false) {
         Step::Show(node) => load_node(&mut session, &def, &node, &story.content, &story.progress),
-        Step::End => next_state.set(PlayState::Exploring),
+        Step::End => {
+            session.finished = true;
+            next_state.set(PlayState::Exploring);
+        }
     }
 }
 
@@ -480,6 +485,47 @@ fn close_dialogue(mut commands: Commands, boxes: Query<Entity, With<DialogueBox>
 mod tests {
     use super::*;
     use crate::content::defs::DataFile;
+    use bevy::ecs::system::RunSystemOnce;
+
+    #[test]
+    fn confirming_the_last_line_stops_saving_the_finished_dialogue() {
+        let (db, locale, errors) = crate::content::load_from_dir(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("assets"),
+        )
+        .expect("assets");
+        assert!(errors.is_empty(), "{errors:?}");
+        let progress = Progress::new_game(&db, Default::default());
+        let mut app = App::new();
+        app.insert_resource(Content { db, locale })
+            .insert_resource(progress)
+            .init_resource::<crate::flow::ActionQueue>()
+            .init_resource::<crate::flow::Notices>()
+            .init_resource::<NextState<PlayState>>()
+            .init_resource::<Time>()
+            .insert_resource(MenuInput {
+                confirm: true,
+                ..default()
+            })
+            .insert_resource(DialogueRequest::Resume {
+                dialogue: "ch1_prologue".into(),
+                node: "n5".into(),
+            });
+        app.world_mut()
+            .run_system_once(open_dialogue)
+            .expect("open");
+        let mut session = app.world_mut().resource_mut::<DialogueSession>();
+        session.revealed = session.line_len() as f32;
+        assert!(session.snapshot().is_some());
+        app.world_mut()
+            .run_system_once(advance_dialogue)
+            .expect("confirm");
+        assert!(
+            app.world()
+                .resource::<DialogueSession>()
+                .snapshot()
+                .is_none()
+        );
+    }
 
     #[derive(Default)]
     struct Host {

@@ -1,0 +1,54 @@
+name: Chapter 1 playtest
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: playtest-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux libraries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev pkg-config
+      - name: Install Rust
+        run: rustup toolchain install 1.98.0 --profile minimal --component rustfmt --component clippy && rustup default 1.98.0
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: playtest-${{ runner.os }}-${{ runner.arch }}-1.98.0-${{ hashFiles('Cargo.lock') }}
+      - run: cargo fmt --check
+      - run: cargo clippy --locked --all-targets -- -D warnings
+      - run: cargo test --locked
+      - name: Build playtest and QA saves
+        run: |
+          cargo build --locked
+          QA_SAVE_DIR=target/playtest/qa-saves cargo test --locked export_qa_saves -- --ignored
+          cp target/debug/grumon target/playtest/
+          cp -R assets target/playtest/
+          cp docs/playtest.md target/playtest/PLAYTEST.md
+          tar -czf target/playtest-${{ runner.os }}-${{ runner.arch }}.tar.gz -C target/playtest .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chapter-1-${{ runner.os }}-${{ runner.arch }}
+          path: target/playtest-${{ runner.os }}-${{ runner.arch }}.tar.gz
+          if-no-files-found: error
+          retention-days: 14

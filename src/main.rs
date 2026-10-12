@@ -1,5 +1,5 @@
 use bevy::{prelude::*, window::WindowResolution};
-use grumon::{CLEAR, GAME_HEIGHT, GAME_WIDTH, GamePlugin};
+use grumon::{CLEAR, GAME_HEIGHT, GAME_TITLE, GAME_WIDTH, GamePlugin};
 
 fn main() {
     App::new()
@@ -8,7 +8,7 @@ fn main() {
             DefaultPlugins
                 .set(WindowPlugin {
                     primary_window: Some(Window {
-                        title: "Grumon".to_string(),
+                        title: GAME_TITLE.to_string(),
                         resizable: false,
                         resolution: WindowResolution::new(GAME_WIDTH, GAME_HEIGHT),
                         ..default()

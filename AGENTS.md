@@ -6,6 +6,7 @@ Guide for AI coding agents (Claude Code, Codex, Cursor, ...) and human contribut
 Other docs:
 - Project overview: [README.md](README.md).
 - Status and next tasks: [plan.md](plan.md).
+- PR demo, QA checkpoints and manual checks: [docs/playtest.md](docs/playtest.md).
 - Rules and formulas: [docs/game-systems.md](docs/game-systems.md).
 - Data formats: [docs/content-schema.md](docs/content-schema.md).
 - Writing rules: [docs/vietnamese-style-guide.md](docs/vietnamese-style-guide.md).
@@ -31,7 +32,7 @@ cargo test                     # all tests: logic, content validation, battle ba
 cargo test balance -- --nocapture   # print battle simulation win rates
 QA_SAVE_DIR=/tmp/qa cargo test export_qa_saves -- --ignored   # saves that start inside Ch1 battles
 THIEN_MENH_SAVE_DIR=/tmp/qa cargo run                            # ...then load them from the title
-cargo clippy --all-targets     # lint; keep it warning-free
+cargo clippy --all-targets -- -D warnings # lint; keep it warning-free
 cargo fmt                      # format before committing
 cargo build --release          # size-optimized release build
 python3 tools/gen_art.py       # regenerate generated art (needs Pillow)

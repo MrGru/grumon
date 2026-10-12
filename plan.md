@@ -3,7 +3,7 @@
 Production plan, current status and risks. A box is ticked **only** when the feature works in the
 game and a test or a recorded in-game check backs it up. "Evidence" names the test or check.
 
-Last updated: 2026-10-08.
+Last updated: 2026-10-12.
 
 Status legend: `[x]` done · `[~]` partly done (the note says what is missing) · `[ ]` not started.
 
@@ -17,11 +17,24 @@ portraits. Scripted playthrough tests cover the whole chapter, and the chapter e
 type and saving inside dialogue and battle have been checked by hand in the running game. The battle
 engine implements every core system and the Milestone 3 content targets for combat are met
 (6 formations, 13 artifacts, 8 Tụ khí techniques, 6 enemy archetypes). Party management, equipment
-and item use work from the pause menu. Still missing: shops, alchemy and refinement (M3), Chapters
-2–8 (only Chapter 2's battle content exists), a listening pass on the audio, and a xianxia tileset
-to replace the original Grumon placeholder.
+and item use work from the pause menu. Shops and alchemy are playable in Ch1; refinement rules and UI are implemented, with the story
+station planned for Ch2. Still missing: Chapters 2–8 (only Chapter 2's battle content exists), a
+listening pass on the audio, and a xianxia tileset to replace the original Grumon placeholder.
 
 ---
+
+## Nearest delivery boundary — Chapter 1 PR playtest
+
+Scope: the existing complete Chapter 1 story, combat, party/equipment, shops and alchemy, with
+placeholder presentation. This is the gameplay demo boundary within M2, not full M2/M3 acceptance.
+Instructions and remaining manual checks: [docs/playtest.md](docs/playtest.md).
+
+| Gate | Status | Evidence |
+|------|--------|----------|
+| Story paths, content, combat balance and economy pass | [x] | `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked`: 89 passed, 2 optional tests ignored; QA export passed separately |
+| Save/load preserves queued story actions and unclaimed battle results; loaded defeat can retry | [x] | `save::tests::roundtrip_keeps_pending_story_actions_and_accepts_older_saves`, `flow::tests::*`, `battle::tests::*`, `dialogue::tests::confirming_the_last_line_stops_saving_the_finished_dialogue` |
+| Linux/macOS PR checks and downloadable debug builds with QA saves | [~] | `.github/workflows/playtest.yml`; first hosted run pending |
+| Manual playtest instructions and checkpoint mapping | [x] | `docs/playtest.md`, existing `export_qa_saves` |
 
 ## Milestone 1 — Playable foundation ✅
 
@@ -109,7 +122,7 @@ audio and portraits are present.
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Content validation in CI | [~] | Runs in `cargo test`; no CI workflow yet |
+| Content validation in CI | [~] | Runs in `cargo test`; PR workflow added for Linux/macOS, first hosted run pending |
 | Quest dependency checks (every quest is startable and completable) | [~] | Ch1 only, via scripted playthroughs |
 | Save migrations | [~] | Framework and a v0 → v1 test exist |
 | Accessibility: text speed, fast battle, font scaling, colour-blind-safe cues | [~] | Fast battle setting only |
@@ -129,7 +142,7 @@ audio and portraits are present.
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| No artist or composer: generated placeholder art, no audio | High: presentation quality | asset-manifest.md lists every gap; `tools/gen_art.py` keeps placeholders reproducible |
+| No artist or composer: generated placeholder art and audio | High: presentation quality | asset-manifest.md lists every gap; `tools/gen_art.py` keeps placeholders reproducible |
 | Repo tileset and character sheets have no licence file | Release blocker | Confirm the rights with the repo owner or replace them (asset-manifest.md) |
 | Scope: 8 chapters of handcrafted content | High | Polish one chapter at a time (prompt §16); data-driven content and validators keep the cost per chapter down |
 | Battle balance drifts as content grows | Medium | Policy simulations in `cargo test`; add per-chapter showcase tests |

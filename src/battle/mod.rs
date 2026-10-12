@@ -115,11 +115,12 @@ pub struct BattleSession {
     pub popups: Vec<(usize, String, u8, f32)>,
     /// Initial state for “Thử lại”.
     initial: BattleState,
+    result_applied: bool,
 }
 
 impl BattleSession {
     pub fn snapshot(&self) -> Option<BattleState> {
-        (!self.state.is_over()).then(|| self.state.clone())
+        (!self.result_applied).then(|| self.state.clone())
     }
 
     pub fn root_entries(&self) -> Vec<RootEntry> {
@@ -198,11 +199,11 @@ fn start_battle(
         return;
     };
     commands.remove_resource::<BattleRequest>();
-    let state = match request {
+    let (state, initial) = match request {
         BattleRequest::Start(id) => {
             let seed = Rng::seed_from(&id, story.progress.battles_fought);
             match BattleState::from_progress(&story.content.db, &story.progress, &id, seed) {
-                Ok(state) => state,
+                Ok(state) => (state.clone(), state),
                 Err(e) => {
                     error!("cannot start battle {id}: {e}");
                     next_state.set(PlayState::Exploring);
@@ -210,7 +211,20 @@ fn start_battle(
                 }
             }
         }
-        BattleRequest::Resume(state) => *state,
+        BattleRequest::Resume(state) => {
+            let seed = Rng::seed_from(&state.encounter, story.progress.battles_fought);
+            let initial = BattleState::from_progress(
+                &story.content.db,
+                &story.progress,
+                &state.encounter,
+                seed,
+            )
+            .unwrap_or_else(|e| {
+                warn!("cannot rebuild battle for retry: {e}");
+                (*state).clone()
+            });
+            (*state, initial)
+        }
     };
     let enc = story.content.db.encounters.get(&state.encounter);
     let seen_flag = format!("tut.{}", state.encounter);
@@ -221,7 +235,8 @@ fn start_battle(
     };
     let log_seen = state.log.len();
     commands.insert_resource(BattleSession {
-        initial: state.clone(),
+        initial,
+        result_applied: false,
         state,
         mode: MenuMode::Root,
         cursor: 0,
@@ -495,6 +510,9 @@ fn battle_input(
     mut next_game: ResMut<NextState<GameState>>,
     mut loads: MessageWriter<LoadRequest>,
 ) {
+    if session.result_applied {
+        return;
+    }
     // Tutorial hints first.
     if !session.hints.is_empty() {
         if input.take_confirm() {
@@ -533,11 +551,13 @@ fn battle_input(
         {
             EndChoice::Continue => {
                 apply_result(&session.state, &mut story);
+                session.result_applied = true;
                 next_play.set(PlayState::Exploring);
             }
             EndChoice::Retry => {
                 let initial = session.initial.clone();
                 session.state = initial;
+                session.result_applied = false;
                 session.log_seen = session.state.log.len();
                 session.lines.clear();
                 session.mode = MenuMode::Root;
@@ -656,4 +676,102 @@ fn end_battle(
         saves.write(crate::save::SaveRequest(SaveSlot::Auto));
     }
     commands.remove_resource::<BattleSession>();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        content::Content,
+        flow::{ActionQueue, Notices},
+        save::SaveFile,
+        story::Progress,
+    };
+    use bevy::ecs::system::RunSystemOnce;
+
+    fn resumed(phase: Phase) -> App {
+        let (db, locale, errors) = crate::content::load_from_dir(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("assets"),
+        )
+        .expect("assets");
+        assert!(errors.is_empty(), "{errors:?}");
+        let mut progress = Progress::new_game(&db, Default::default());
+        progress.set_flag("tut.ch1_da_tru", 1);
+        let seed = Rng::seed_from("ch1_da_tru", progress.battles_fought);
+        let mut battle =
+            BattleState::from_progress(&db, &progress, "ch1_da_tru", seed).expect("battle");
+        battle.phase = phase;
+        battle.units[0].hp = 0;
+        let save = SaveFile::new(&progress, None, Some(battle));
+        let loaded: SaveFile =
+            serde_json::from_str(&serde_json::to_string(&save).expect("serialize"))
+                .expect("deserialize");
+        let mut app = App::new();
+        app.insert_resource(Content { db, locale })
+            .insert_resource(progress)
+            .insert_resource(BattleRequest::Resume(loaded.battle.expect("saved battle")))
+            .init_resource::<ActionQueue>()
+            .init_resource::<Notices>()
+            .init_resource::<NextState<PlayState>>()
+            .init_resource::<NextState<GameState>>()
+            .insert_resource(MenuInput {
+                confirm: true,
+                ..default()
+            })
+            .add_message::<LoadRequest>();
+        app.world_mut()
+            .run_system_once(start_battle)
+            .expect("start battle");
+        app
+    }
+
+    #[test]
+    fn saving_victory_keeps_unclaimed_rewards_until_confirmation() {
+        let mut app = resumed(Phase::Victory);
+        assert_eq!(
+            app.world()
+                .resource::<BattleSession>()
+                .snapshot()
+                .expect("snapshot")
+                .phase,
+            Phase::Victory
+        );
+        assert_eq!(app.world().resource::<Progress>().battles_fought, 0);
+        app.world_mut()
+            .run_system_once(battle_input)
+            .expect("confirm victory");
+        assert_eq!(app.world().resource::<Progress>().battles_fought, 1);
+        assert_eq!(
+            app.world()
+                .resource::<Progress>()
+                .flag("ch1.da_tru_defeated"),
+            1
+        );
+        assert!(app.world().resource::<BattleSession>().snapshot().is_none());
+        app.world_mut().resource_mut::<MenuInput>().consumed = false;
+        app.world_mut()
+            .run_system_once(battle_input)
+            .expect("second confirm");
+        assert_eq!(app.world().resource::<Progress>().battles_fought, 1);
+    }
+
+    #[test]
+    fn retry_after_loading_defeat_starts_a_fresh_battle() {
+        let mut app = resumed(Phase::Defeat);
+        assert_eq!(
+            app.world()
+                .resource::<BattleSession>()
+                .snapshot()
+                .expect("snapshot")
+                .phase,
+            Phase::Defeat
+        );
+        app.world_mut()
+            .run_system_once(battle_input)
+            .expect("retry");
+        let session = app.world().resource::<BattleSession>();
+        assert!(!session.state.is_over());
+        assert!(session.state.units[0].hp > 0);
+        assert_eq!(app.world().resource::<Progress>().battles_fought, 0);
+    }
 }
