@@ -27,14 +27,16 @@ listening pass on the audio, and a xianxia tileset to replace the original Grumo
 
 Scope: the existing complete Chapter 1 story, combat, party/equipment, shops and alchemy, with
 placeholder presentation. This is the gameplay demo boundary within M2, not full M2/M3 acceptance.
-Instructions and remaining manual checks: [docs/playtest.md](docs/playtest.md).
+Instructions, the 2026-10-12 macOS QA record and remaining manual checks:
+[docs/playtest.md](docs/playtest.md).
 
 | Gate | Status | Evidence |
 |------|--------|----------|
-| Story paths, content, combat balance and economy pass | [x] | `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked`: 89 passed, 2 optional tests ignored; QA export passed separately |
+| Story paths, content, combat balance and economy pass | [x] | `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked`: 90 passed, 2 optional tests ignored; QA export passed separately |
 | Save/load preserves queued story actions and unclaimed battle results; loaded defeat can retry | [x] | `save::tests::roundtrip_keeps_pending_story_actions_and_accepts_older_saves`, `flow::tests::*`, `battle::tests::*`, `dialogue::tests::confirming_the_last_line_stops_saving_the_finished_dialogue` |
-| Linux/macOS PR checks and downloadable debug builds with QA saves | [~] | `.github/workflows/playtest.yml`; first hosted run pending |
+| Linux/macOS PR checks and downloadable debug builds with QA saves | [~] | `.github/workflows/playtest.yml`; hosted run in progress |
 | Manual playtest instructions and checkpoint mapping | [x] | `docs/playtest.md`, existing `export_qa_saves` |
+| macOS gameplay smoke check, both major battles completed, chapter-end autosave | [x] | 2026-10-12 record in `docs/playtest.md`; `chapter_1_saves_completion_before_showing_the_end_card` |
 
 ## Milestone 1 — Playable foundation ✅
 
@@ -69,10 +71,10 @@ Instructions and remaining manual checks: [docs/playtest.md](docs/playtest.md).
 | Quests with journal and tracker | [x] | `story::tests::quest_completes_and_chains`, HUD screenshot |
 | Boss: Lang Nha | [x] | `showcase_2_lang_nha_two_approaches` |
 | Every story branch reaches the end of the chapter | [x] | Two scripted paths plus side-quest failure tests. Not exhaustive over all choice combinations |
-| Raid formation battle and Lang Nha battle checked in the running game | [~] | Loaded from QA saves (`story_tests::export_qa_saves`): opening turns played, shield, guard, Tụ khí stages 1–2 and a stage-2 *Phá Thạch Quyền* release work. Neither fight was played to the end by hand |
+| Raid formation battle and Lang Nha battle checked in the running game | [x] | 2026-10-12 macOS QA from `export_qa_saves`: both won. Raid: Huyền Quy Thuẫn + Thủ thế to formation stage 3. Lang Nha: wolf first, Phóng Linh, charge stages 1–2 and Phá Thạch Quyền. F5/F9 on both victory screens, then continue into story; boss gives +88 tu vi exactly once |
 | Battle ends and returns to the map, autosave written | [x] | In-game: boar battle won from a QA save, back on the Forest map, `auto.json` has `ch1.da_tru_defeated` |
-| Chapter end (dawn, farewell) checked by hand | [x] | In-game from a QA save: grave, token, medicine jar, thím Ba, Lý Đức's farewell, "Hết Chương 1" card, autosave with all five main quests Done. This check found the raid-entry objective could stall the quest chain if its trigger was skipped; fixed and now asserted by both playthrough tests |
-| Save/load in-game during dialogue and combat | [x] | F5 inside a dialogue and inside the raid battle; F9 and the title load screen resume the exact node / battle state |
+| Chapter end (dawn, farewell) checked by hand | [x] | In-game from a QA save: grave, token, medicine jar, thím Ba, Lý Đức's farewell, "Hết Chương 1" card, autosave with all five main quests Done. 2026-10-12: farewell and end card rechecked; completion plus all five main quests are saved before the end card opens (`chapter_1_saves_completion_before_showing_the_end_card`). The earlier check found the raid-entry objective could stall the quest chain if its trigger was skipped; fixed and now asserted by both playthrough tests |
+| Save/load in-game during dialogue and combat | [x] | F5 inside a dialogue and inside the raid battle; F9 and the title load screen resume the exact node / battle state. Rechecked 2026-10-12: battle JSON identical after F5 → command → F9 → F5; pending story actions also retained |
 | Save/load across a chapter transition | [ ] | There is only one chapter so far |
 | Audio (music + SFX) | [~] | 8 generated loops and 17 sound effects (`tools/gen_audio.py`), data-driven music per map/time/battle/story, volume settings. Verified in game through logs with a null audio device (`audio::tests`, music log); **not yet listened to by a human** |
 | Dialogue portraits | [x] | 20 generated portraits (`tools/gen_portraits.py`), shown left of the dialogue text; `content::tests::every_speaker_has_a_portrait`. One expression each |
@@ -122,7 +124,7 @@ audio and portraits are present.
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Content validation in CI | [~] | Runs in `cargo test`; PR workflow added for Linux/macOS, first hosted run pending |
+| Content validation in CI | [~] | Runs in `cargo test`; PR workflow added for Linux/macOS, hosted run in progress |
 | Quest dependency checks (every quest is startable and completable) | [~] | Ch1 only, via scripted playthroughs |
 | Save migrations | [~] | Framework and a v0 → v1 test exist |
 | Accessibility: text speed, fast battle, font scaling, colour-blind-safe cues | [~] | Fast battle setting only |

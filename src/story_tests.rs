@@ -381,6 +381,16 @@ fn chapter_1_minimal_path_skipping_side_content() {
 }
 
 #[test]
+fn chapter_1_saves_completion_before_showing_the_end_card() {
+    let mut s = Sim::new(Addressing::Female);
+    let dialogue = s.db.dialogues["ch1_farewell"].clone();
+    assert_eq!(walk(&dialogue, Some("f7"), &mut s, false), Step::End);
+    assert_eq!(s.p.flag("ch1.complete"), 1);
+    assert_eq!(s.queue.pop_front(), Some(Deferred::Autosave));
+    assert_eq!(s.queue.pop_front(), Some(Deferred::Card("ch1_end".into())));
+}
+
+#[test]
 fn side_quests_fail_when_the_raid_starts() {
     let mut s = Sim::new(Addressing::Male);
     s.choose("ch1_lien_dusk", "ready", "go");

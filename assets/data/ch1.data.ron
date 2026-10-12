@@ -797,7 +797,7 @@
                        effects: [GiveMoney(30), GiveItem("thuoc_tri_thuong", 2)]),
             "f5": Line(speaker: Some("ngoc_lao"), next: Some("f6")),
             "f6": Line(next: Some("f7")),
-            "f7": Effects(effects: [SetFlag("ch1.complete", 1), Card("ch1_end"), Autosave], next: None),
+            "f7": Effects(effects: [SetFlag("ch1.complete", 1), Autosave, Card("ch1_end")], next: None),
         }),
         (id: "ch1_ly_duc_after", nodes: {
             "start": Line(speaker: Some("ly_duc"), next: None),
