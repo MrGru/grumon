@@ -9,6 +9,9 @@ use crate::{
 /// Display name; duplicates of the same enemy get “A”, “B”…
 pub fn unit_name(state: &BattleState, i: usize, content: &Content, progress: &Progress) -> String {
     let u = &state.units[i];
+    if u.summon.is_some() {
+        return content.text(&format!("summon.{}.name", u.def), progress);
+    }
     match u.side {
         Side::Party => content.character_name(&u.def, progress),
         Side::Enemy => {
@@ -27,11 +30,12 @@ pub fn unit_name(state: &BattleState, i: usize, content: &Content, progress: &Pr
     }
 }
 
-/// Compact name for tight spaces: the protagonist's given name (last word, as
-/// Vietnamese names are written family name first), others unchanged.
+/// Compact name for tight spaces: party members go by their given name (the
+/// last word, as Vietnamese names are written family name first).
 pub fn short_name(state: &BattleState, i: usize, content: &Content, progress: &Progress) -> String {
     let name = unit_name(state, i, content, progress);
-    if state.units[i].is_player() {
+    let u = &state.units[i];
+    if u.side == Side::Party && u.summon.is_none() {
         name.split_whitespace().last().unwrap_or(&name).to_string()
     } else {
         name
@@ -148,6 +152,11 @@ pub fn log_line(
             &[("target", name(*target)), ("ticks", ticks.to_string())],
         ),
         LogEntry::Ko { unit } => f("log.ko", &[("unit", name(*unit))]),
+        LogEntry::Summoned { unit, owner } => f(
+            "log.summoned",
+            &[("unit", name(*unit)), ("owner", name(*owner))],
+        ),
+        LogEntry::Dissipated { unit } => f("log.dissipated", &[("unit", name(*unit))]),
         LogEntry::Combo { from, to } => f(
             "log.combo",
             &[

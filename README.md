@@ -12,8 +12,12 @@ The game ships in **Vietnamese only** (vi-VN). Source code and developer docs ar
 
 **Chapter 1 (Phàm Trần Huyết Kiếp)** can be played from start to finish. Chapters 2–8 are outlined
 in the docs but not built yet. For what is done, what is missing and the risks, see
-[plan.md](plan.md). The game has no audio yet and uses placeholder art
+[plan.md](plan.md). It uses generated placeholder art and music
 ([docs/asset-manifest.md](docs/asset-manifest.md)).
+
+For the Chapter 1 PR demo, QA saves and the manual checklist, see
+[docs/playtest.md](docs/playtest.md). The `Rust checks` workflow runs format and Clippy checks
+on Linux. Tests, running the game and packaging are local tasks.
 
 ## Features
 
@@ -29,7 +33,10 @@ in the docs but not built yet. For what is done, what is missing and the risks, 
   - **Trận pháp** formations with phases;
   - active **Pháp bảo** artifacts and Ngũ hành elements;
   - visible enemy intents.
-- Pause menu: party, inventory, journal, saves and settings.
+- Pause menu: party (battle rows, order, artifacts, formation), inventory with item use, journal,
+  saves and settings (battle speed, music and sound volume).
+- Shops, Luyện đan (deterministic alchemy) and Luyện khí (artifact refinement).
+- Generated music, sound effects and dialogue portraits.
 - Saves are versioned and written atomically, with a backup copy:
   - autosave, quick save and 3 manual slots;
   - you can save anywhere, including inside a dialogue or a battle.
@@ -47,6 +54,7 @@ in the docs but not built yet. For what is done, what is missing and the risks, 
 | Toggle Telex while entering a name | Tab | North (Y) |
 | Quick save / quick load | F5 / F9 | – |
 | World inspector / collision gizmos (debug builds) | F1 / F2 | – |
+| Open forge / alchemy screen (debug builds) | F3 / F4 | – |
 
 ## Getting started
 

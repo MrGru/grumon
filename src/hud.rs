@@ -3,6 +3,7 @@
 
 use bevy::prelude::*;
 
+use crate::audio::{Sfx, sound};
 use crate::{
     GameState, PlayState,
     asset::GameAssets,
@@ -163,6 +164,9 @@ pub fn notice_text(notice: &Notice, content: &Content, progress: &Progress) -> S
             progress,
             &[("item", item_name(id)), ("count", n.to_string())],
         ),
+        Notice::ItemUsed(id) => {
+            content.format("notice.item_used", progress, &[("item", item_name(id))])
+        }
         Notice::Money(n) if *n >= 0 => {
             content.format("notice.money_gained", progress, &[("count", n.to_string())])
         }
@@ -218,6 +222,30 @@ pub fn notice_text(notice: &Notice, content: &Content, progress: &Progress) -> S
                 ("realm", realm_text(content, progress, *realm, *stage)),
             ],
         ),
+        Notice::Breakthrough(member, realm) => content.format(
+            "notice.breakthrough",
+            progress,
+            &[
+                ("name", content.character_name(member, progress)),
+                ("realm", content.text(realm.key(), progress)),
+            ],
+        ),
+        Notice::RecipeLearned(id) => content.format(
+            "notice.recipe_learned",
+            progress,
+            &[(
+                "recipe",
+                content.text(&format!("recipe.{id}.name"), progress),
+            )],
+        ),
+        Notice::FormationLearned(id) => content.format(
+            "notice.formation_learned",
+            progress,
+            &[(
+                "formation",
+                content.text(&format!("formation.{id}.name"), progress),
+            )],
+        ),
         Notice::Custom(key) => content.text(key, progress),
     }
 }
@@ -240,6 +268,24 @@ pub fn realm_text(
     }
 }
 
+fn notice_sound(notice: &Notice) -> Option<&'static str> {
+    match notice {
+        Notice::ItemGained(..) | Notice::ArtifactGained(_) | Notice::Money(_) => {
+            Some(sound::PICKUP)
+        }
+        Notice::QuestStarted(_) | Notice::QuestDone(_) | Notice::Joined(_) => Some(sound::QUEST),
+        Notice::SkillLearned(..)
+        | Notice::StageUp(..)
+        | Notice::Breakthrough(..)
+        | Notice::FormationLearned(_)
+        | Notice::RecipeLearned(_) => Some(sound::FORMATION),
+        Notice::ItemUsed(_) => Some(sound::HEAL),
+        Notice::Custom(key) if key.contains("saved") => Some(sound::SAVE),
+        Notice::QuestFailed(_) | Notice::ItemLost(..) | Notice::Left(_) => Some(sound::UI_CANCEL),
+        _ => None,
+    }
+}
+
 fn show_notices(
     mut commands: Commands,
     assets: Res<GameAssets>,
@@ -247,6 +293,7 @@ fn show_notices(
     progress: Option<Res<Progress>>,
     mut notices: ResMut<Notices>,
     list: Query<Entity, With<NoticeList>>,
+    mut sfx: MessageWriter<Sfx>,
 ) {
     let (Some(progress), Ok(list)) = (progress, list.single()) else {
         return;
@@ -259,6 +306,9 @@ fn show_notices(
                 .is_some_and(|p| p.realm == crate::content::defs::Realm::PhamNhan)
         {
             continue;
+        }
+        if let Some(sound) = notice_sound(&notice) {
+            sfx.write(Sfx(sound));
         }
         let text = notice_text(&notice, &content, &progress);
         commands.entity(list).with_child((

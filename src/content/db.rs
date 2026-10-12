@@ -20,6 +20,10 @@ pub struct GameDb {
     pub triggers: BTreeMap<String, TriggerDef>,
     pub objects: BTreeMap<String, ObjectDef>,
     pub chapters: BTreeMap<u8, ChapterDef>,
+    pub levels: BTreeMap<String, LevelDef>,
+    pub summons: BTreeMap<String, SummonDef>,
+    pub shops: BTreeMap<String, ShopDef>,
+    pub recipes: BTreeMap<String, RecipeDef>,
 }
 
 fn insert_all<T>(
@@ -101,6 +105,22 @@ impl GameDb {
                 "object",
                 &mut db.objects,
                 file.objects,
+                |d| &d.id,
+                &mut errors,
+            );
+            insert_all("level", &mut db.levels, file.levels, |d| &d.id, &mut errors);
+            insert_all("shop", &mut db.shops, file.shops, |d| &d.id, &mut errors);
+            insert_all(
+                "recipe",
+                &mut db.recipes,
+                file.recipes,
+                |d| &d.id,
+                &mut errors,
+            );
+            insert_all(
+                "summon",
+                &mut db.summons,
+                file.summons,
                 |d| &d.id,
                 &mut errors,
             );

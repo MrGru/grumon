@@ -13,8 +13,12 @@
          battle_use: [HealPct(45), Cleanse], target: Ally),
         (id: "hoi_khi_tan", category: Medicine, rarity: Uncommon, price: 15,
          battle_use: [RestoreLl(50)], target: Ally),
+        // Cultivation pills: used from the pause menu.
+        (id: "tu_khi_dan", category: Medicine, rarity: Uncommon, price: 40, field_use: [TuVi(40)]),
         // --- Materials ---
         (id: "thanh_tam_thao", category: Material, rarity: Common, price: 3),
+        (id: "phe_dan", category: Material, rarity: Common, price: 1),
+        (id: "huyen_thiet", category: Material, rarity: Uncommon, price: 15),
         (id: "linh_lang_nanh", category: Material, rarity: Uncommon, price: 10),
         (id: "da_tru_nanh", category: Material, rarity: Common, price: 4),
         (id: "go_dao", category: Material, rarity: Common, price: 0),
@@ -69,23 +73,73 @@
          effects: [StunIfChanneling(else_power: 80)]),
         (id: "kiem_phoi_tram", ap: 2, ll: 8, target: Enemy, melee: true, element: Kim, chargeable: true,
          effects: [Damage(power: 170)]),
+        (id: "chieu_hon_trieu", ap: 2, ll: 10, cooldown: 4, target: SelfOnly,
+         effects: [Summon("oan_hon_ve")]),
+        // --- Companion Tụ khí techniques (Ch2+) ---
+        // Diệp Hàn Sương: sword combo, one more cut at stage 2.
+        (id: "thanh_van_kiem_quyet", ap: 2, ll: 10, target: Enemy, element: Kim, chargeable: true,
+         effects: [Damage(power: 75, hits: 2)],
+         charge_bonus: [(stage: 2, effects: [Damage(power: 75)]),
+                        (stage: 3, effects: [Status(id: PhaGiap, turns: 2)])]),
+        // Diệp Hàn Sương: freezing palm, slows from stage 1, stuns at stage 3.
+        (id: "han_bang_chuong", ap: 2, ll: 12, target: Enemy, element: Thuy, chargeable: true,
+         effects: [Damage(power: 130, scaling: Spi)],
+         charge_bonus: [(stage: 1, effects: [Status(id: Cham, turns: 2)]),
+                        (stage: 3, effects: [Status(id: Choang, turns: 1)])]),
+        // Âu Dương Liệt: fire over every enemy, burns from stage 2.
+        (id: "liet_hoa_phan_thien", ap: 3, ll: 18, target: AllEnemies, element: Hoa, chargeable: true,
+         effects: [Damage(power: 80, scaling: Spi)],
+         charge_bonus: [(stage: 2, effects: [Status(id: Bong, turns: 2)])]),
+        // Tạ Vô Ưu: soul fire that drinks Linh lực; seals at stage 3.
+        (id: "hon_hoa_phe_linh", ap: 2, ll: 6, target: Enemy, element: Hoa, chargeable: true,
+         effects: [Damage(power: 90, scaling: Spi), DrainLl(10)],
+         charge_bonus: [(stage: 2, effects: [DrainLl(15)]),
+                        (stage: 3, effects: [Status(id: PhongAn, turns: 1)])]),
+        // Tô Thanh Liên: healing rain for the party; cleanses at stage 2, wards at 3.
+        (id: "moc_linh_hoi_xuan", ap: 2, ll: 16, target: AllAllies, element: Moc, chargeable: true,
+         effects: [Heal(power: 70, scaling: Spi)],
+         charge_bonus: [(stage: 2, effects: [Cleanse]),
+                        (stage: 3, effects: [Status(id: HoTam, turns: 1)])]),
     ],
 
     artifacts: [
         (id: "tu_linh_ho_lo", tier: 1, active: Some("phong_linh"), charges_per_battle: Some(2),
-         passives: [StoreLl(30)]),
+         passives: [StoreLl(30)],
+         refine: [(materials: [("linh_lang_nanh", 2)], money: 20, gain: Charges(1)),
+                   (materials: [("huyen_thiet", 2)], money: 80, gain: Charges(1))]),
         (id: "huyen_quy_thuan", tier: 2, element: Thuy, active: Some("huyen_quy_ho_the"),
-         passives: [ShieldToEnergy]),
-        (id: "thanh_van_phi_kiem", tier: 2, element: Kim, active: Some("thanh_van_kiem_vu")),
-        (id: "tran_hon_linh", tier: 2, active: Some("tran_hon_chuong")),
+         passives: [ShieldToEnergy],
+         refine: [(materials: [("huyen_thiet", 1)], money: 40, gain: Power(25)),
+                   (materials: [("huyen_thiet", 3)], money: 120, gain: Cooldown(1))]),
+        (id: "thanh_van_phi_kiem", tier: 2, element: Kim, active: Some("thanh_van_kiem_vu"),
+         refine: [(materials: [("huyen_thiet", 1)], money: 40, gain: Power(20)),
+                   (materials: [("huyen_thiet", 2), ("linh_lang_nanh", 2)], money: 100, gain: Power(20))]),
+        (id: "tran_hon_linh", tier: 2, active: Some("tran_hon_chuong"),
+         refine: [(materials: [("huyen_thiet", 2)], money: 60, gain: Cooldown(1))]),
         (id: "ngu_hanh_ky", tier: 2, active: Some("ngu_hanh_doi_ky")),
         (id: "huyen_anh_kinh", tier: 2, element: Thuy, active: Some("huyen_anh_phan_than")),
-        (id: "xich_viem_chau", tier: 3, element: Hoa, active: Some("xich_viem_bao"), passives: [Overheat]),
+        (id: "xich_viem_chau", tier: 3, element: Hoa, active: Some("xich_viem_bao"), passives: [Overheat],
+         refine: [(materials: [("huyen_thiet", 2)], money: 80, gain: Power(25))]),
         (id: "ban_menh_kiem_phoi", tier: 4, element: Kim, active: Some("kiem_phoi_tram")),
         (id: "hon_dang", tier: 2, element: Hoa, active: Some("hon_dang_phe_anh")),
         (id: "truy_phong_ngoa", tier: 1, active: Some("truy_phong_bo"), passives: [SpeedBonus(5)]),
-        (id: "bach_thao_dinh", tier: 3, element: Moc, active: Some("bach_thao_luyen")),
+        (id: "bach_thao_dinh", tier: 3, element: Moc, active: Some("bach_thao_luyen"),
+         refine: [(materials: [("thanh_tam_thao", 4)], money: 60, gain: Power(30))]),
         (id: "pha_son_an", tier: 3, element: Tho, active: Some("pha_son_tran")),
+        (id: "chieu_hon_phien", tier: 3, element: Hoa, active: Some("chieu_hon_trieu"),
+         refine: [(materials: [("huyen_thiet", 2)], money: 80, gain: Cooldown(1))]),
+    ],
+
+    recipes: [
+        // Ông Mạc's first lesson (Ch1): boar tusk and Thanh Tâm Thảo.
+        (id: "tri_thuong_tan", product: "thuoc_tri_thuong",
+         ingredients: [("thanh_tam_thao", 1), ("da_tru_nanh", 1)], difficulty: 20, money: 2),
+    ],
+
+    summons: [
+        // Chiêu Hồn Phiên: a wronged soul that draws every single-target blow for two turns.
+        (id: "oan_hon_ve", sheet: 8, tint: Some((0.55, 0.75, 1.0)), hp_pct: 45, def_pct: 120,
+         turns: 2, taunt: true),
     ],
 
     formations: [
@@ -107,6 +161,16 @@
             (threshold: 3, aura: [AtkPct(10)]),
             (threshold: 6, pulse: [InterruptAllEnemies]),
         ], release: [StatusAllEnemies(PhaGiap, 2), StatusAllEnemies(PhongAn, 1)]),
+        // Swap & tempo: free swaps, then both nodes hasted; release pulls them to act next.
+        (id: "luong_nghi_tran", min_members: 2, phases: [
+            (threshold: 2, aura: [FreeSwap]),
+            (threshold: 4, pulse: [HasteAll(200)]),
+        ], release: [HasteAll(900)]),
+        // Illusion: decoys for the back row, then a slowing maze; release hides everyone.
+        (id: "cuu_cung_me_tran", min_members: 3, phases: [
+            (threshold: 4, pulse: [StatusRow(Back, HuAnh, 0)]),
+            (threshold: 8, pulse: [StatusAllEnemies(Cham, 2)]),
+        ], release: [StatusAllAllies(HuAnh, 0), DelayAllEnemies(200)]),
     ],
 
     characters: [
@@ -119,5 +183,31 @@
         (id: "ong_mac", sheet: 10, element: Moc,
          base: (hp: 230, ll: 90, atk: 12, spi: 26, def: 14, tp: 34),
          skills: ["thanh_moc_cham", "duong_sinh_quyet"], artifacts: ["huyen_quy_thuan"]),
+        // Companions from Chapter 2 on (story-bible §4.4–4.7). Not in the party yet.
+        (id: "diep_han_suong", sheet: 3, element: Kim,
+         base: (hp: 70, ll: 30, atk: 13, spi: 8, def: 4, tp: 44),
+         growth: (hp: 32, ll: 20, atk: 7, spi: 4, def: 2, tp: 8),
+         skills: ["thanh_van_kiem_quyet", "han_bang_chuong"], artifacts: ["thanh_van_phi_kiem"]),
+        (id: "au_duong_liet", sheet: 7, element: Hoa,
+         base: (hp: 80, ll: 26, atk: 12, spi: 10, def: 5, tp: 36),
+         growth: (hp: 36, ll: 20, atk: 7, spi: 5, def: 3, tp: 5),
+         skills: ["liet_hoa_phan_thien", "xich_viem_bao"], artifacts: ["xich_viem_chau"]),
+        (id: "ta_vo_uu", sheet: 4, element: Hoa, slot: Middle,
+         base: (hp: 74, ll: 34, atk: 8, spi: 12, def: 4, tp: 40),
+         growth: (hp: 30, ll: 24, atk: 4, spi: 7, def: 2, tp: 6),
+         skills: ["hon_hoa_phe_linh"], artifacts: ["chieu_hon_phien"]),
+        (id: "to_thanh_lien", sheet: 6, element: Thuy, slot: Back,
+         base: (hp: 72, ll: 36, atk: 6, spi: 13, def: 4, tp: 38),
+         growth: (hp: 30, ll: 26, atk: 3, spi: 7, def: 3, tp: 6),
+         skills: ["moc_linh_hoi_xuan", "thanh_moc_cham"], artifacts: ["ngu_hanh_ky"]),
+    ],
+
+    // Map music; `music_by_time` overrides it for a time of day.
+    levels: [
+        (id: "Village", music: "village",
+         music_by_time: {Night: "night", Raid: "raid", Dawn: "sorrow"}),
+        (id: "Forest", music: "forest", music_by_time: {Night: "night", Raid: "night", Dawn: "sorrow"}),
+        (id: "Snowfield", music: "forest", music_by_time: {Night: "night", Raid: "night", Dawn: "sorrow"}),
+        (id: "Beach", music: "village", music_by_time: {Night: "night", Raid: "night", Dawn: "sorrow"}),
     ],
 )

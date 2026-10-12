@@ -2,7 +2,7 @@
 """Generates original prototype art for THIÊN MỆNH: TÀN HỒN (requires Pillow).
 
 Outputs (all original, see docs/asset-manifest.md):
-  assets/gfx/objects/objects.png   map objects (herb, kite, grave, shrine…)
+  assets/gfx/objects/objects.png   map objects (herb, kite, jar, grave, shrine…)
   assets/gfx/enemies/*.png         beast battle sprites (32x32)
   assets/gfx/battle/*.png          battle backgrounds (960x640), graded from
                                    assets/gfx/backgrounds/background*.png
@@ -125,6 +125,12 @@ HERB = [
     "..CGCGGgGGGCGC..", "...CGGGgGGGGC...", "....CGGgGGGC....", ".....CGgGGC.....",
     "......Kg.K......", ".....KgggK......", "....KbbbbbK.....", "................",
 ]
+JAR = [
+    "................", "................", ".....KKKKKK.....", "....KMMRRMMK....",
+    ".....KbbbbK.....", "....KEEEEEEK....", "...KEeEEEEeEK...", "...KELLLLLLEK...",
+    "...KELYYYYLEK...", "...KELLLLLLEK...", "...KEEEEEEEEK...", "...KeEEEEEEeK...",
+    "....KeeEEeeK....", ".....KKKKKK.....", "................", "................",
+]
 FIRE = [
     "........Y.......", ".......YY.......", "......YYOY......", "....Y.YOOY..Y...",
     "....YYOOOOYYY...", "...YOOOROOOOY...", "...YOORRROOOY...", "..YOORRRRROOY...",
@@ -214,7 +220,7 @@ def build_objects():
     sheet = Image.new("RGBA", (128, 64), (0, 0, 0, 0))
     for (x, y), rows in {
         (0, 0): SPARKLE, (16, 0): KITE, (32, 0): DRIFTWOOD, (48, 0): HERB,
-        (64, 0): FIRE, (80, 0): LANTERN, (0, 16): GRAVE, (32, 16): BENCH,
+        (64, 0): FIRE, (80, 0): LANTERN, (96, 0): JAR, (0, 16): GRAVE, (32, 16): BENCH,
         (64, 16): SHRINE, (0, 48): BODY,
     }.items():
         sheet.alpha_composite(sprite(rows, OBJ_PAL), (x, y))

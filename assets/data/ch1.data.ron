@@ -84,7 +84,7 @@
          hints: ["hint.ch1_hac_y.1"]),
         (id: "ch1_dem_mua", enemies: [("do_cuong", Front), ("hac_y_tay_sai", Middle)],
          guests: [(character: "ong_mac", slot: Front, hp_pct_if: Some(("ch1.saved_dau", 75)))],
-         formation: Some("ho_tam_tran"), objective: FormationPhase(3), protect: ["ong_mac"],
+         formation: Some("ho_tam_tran"), objective: FormationPhase(3), protect: ["ong_mac"], music: Some("raid"),
          background: "village_raid",
          on_victory: [SetFlag("ch1.ong_mac_dead", 1), Dialogue("ch1_ong_mac_death")],
          hints: ["hint.ch1_dem_mua.1", "hint.ch1_dem_mua.2", "hint.ch1_dem_mua.3"]),
@@ -113,7 +113,8 @@
          on_complete: [StartQuest("ch1_huyet_kiep")]),
         (id: "ch1_huyet_kiep", chapter: 1, kind: Main,
          objectives: [
-            (id: "enter", done_when: Flag("ch1.raid_entered")),
+            // Later raid events also count, so the chain never stalls on this trigger.
+            (id: "enter", done_when: Any([Flag("ch1.raid_entered"), Flag("ch1.hac_y_defeated"), Flag("ch1.ong_mac_dead")])),
             (id: "find", done_when: Flag("ch1.ong_mac_dead")),
          ],
          on_complete: [StartQuest("ch1_chay_tron")]),
@@ -302,6 +303,12 @@
          when: Some(TimeIs(Dawn)), effects: [Dialogue("ch1_grave")]),
         (id: "ch1_lenh_bai", sheet: Objects, sprite: Some((0, 0, 16, 16)), once: true,
          when: Some(TimeIs(Dawn)), effects: [Dialogue("ch1_token")]),
+        // Ông Mạc's medicine stove: brew the recipe he teaches (before the raid).
+        (id: "ch1_bep_thuoc", sheet: Objects, sprite: Some((64, 0, 16, 16)), solid: true,
+         when: Some(NotFlag("ch1.raid_started")), effects: [OpenCraft(Alchemy)]),
+        // Ông Mạc's medicine jar survived the fire.
+        (id: "ch1_hu_thuoc", sheet: Objects, sprite: Some((96, 0, 16, 16)), once: true,
+         when: Some(All([TimeIs(Dawn), Flag("ch1.awakened")])), effects: [Dialogue("ch1_hu_thuoc")]),
     ],
 
     triggers: [
@@ -366,9 +373,10 @@
                 (id: "thanks", next: Some("t1")),
                 (id: "doubt", next: Some("d1")),
             ]),
-            "t1": Line(speaker: Some("ong_mac"), next: Some("end"), effects: [Trust("ong_mac", 1)]),
+            "t1": Line(speaker: Some("ong_mac"), next: Some("recipe"), effects: [Trust("ong_mac", 1)]),
             "d1": Line(speaker: Some("ong_mac"), next: Some("d2")),
-            "d2": Line(next: Some("end")),
+            "d2": Line(next: Some("recipe")),
+            "recipe": Line(speaker: Some("ong_mac"), next: Some("end"), effects: [LearnRecipe("tri_thuong_tan")]),
             "end": Line(speaker: Some("ong_mac"), next: None,
                         effects: [TimeOfDay(Dusk), SetFlag("ch1.dusk", 1)]),
         }),
@@ -453,7 +461,11 @@
             "t3": Line(speaker: Some("thim_ba"), next: None, effects: [StartQuest("ch1_chao_ca")]),
         }),
         (id: "ch1_thim_ba_fish_wait", nodes: {
-            "start": Line(speaker: Some("thim_ba"), next: None),
+            "start": Line(speaker: Some("thim_ba"), next: Some("ask")),
+            "ask": Choice(speaker: Some("thim_ba"), options: [
+                (id: "buy", effects: [OpenShop("ch1_quan_thim_ba")]),
+                (id: "bye"),
+            ]),
         }),
         (id: "ch1_thim_ba_fish_return", nodes: {
             "start": Line(speaker: Some("thim_ba"), next: Some("f2"),
@@ -461,7 +473,11 @@
             "f2": Line(speaker: Some("thim_ba"), next: None),
         }),
         (id: "ch1_thim_ba_after", nodes: {
-            "start": Line(speaker: Some("thim_ba"), next: None),
+            "start": Line(speaker: Some("thim_ba"), next: Some("ask")),
+            "ask": Choice(speaker: Some("thim_ba"), options: [
+                (id: "buy", effects: [OpenShop("ch1_quan_thim_ba")]),
+                (id: "bye"),
+            ]),
         }),
         (id: "ch1_nam_fish", nodes: {
             "start": Line(speaker: Some("chu_nam"), next: Some("n2")),
@@ -625,7 +641,7 @@
             "r8": Line(speaker: Some("ong_mac"), next: None, effects: [Battle("ch1_dem_mua")]),
         }),
         (id: "ch1_ong_mac_death", nodes: {
-            "start": Line(next: Some("d2")),
+            "start": Line(next: Some("d2"), effects: [Music("sorrow")]),
             "d2": Line(next: Some("d3")),
             "d3": Line(speaker: Some("player"), next: Some("d4")),
             "d4": Line(speaker: Some("ong_mac"), next: Some("d5")),
@@ -647,7 +663,7 @@
             "c1": Line(speaker: Some("ong_mac"), next: Some("d16")),
             "d16": Line(speaker: Some("ong_mac"), next: Some("d17")),
             "d17": Line(next: Some("d18")),
-            "d18": Line(next: None, effects: [Autosave]),
+            "d18": Line(next: None, effects: [Music(""), Autosave]),
         }),
         (id: "ch1_lang_dem_intro", nodes: {
             "start": Line(next: Some("n2")),
@@ -677,7 +693,7 @@
             "awaken": Effects(effects: [Dialogue("ch1_awakening")], next: None),
         }),
         (id: "ch1_awakening", nodes: {
-            "start": Line(next: Some("a2")),
+            "start": Line(next: Some("a2"), effects: [Music("title")]),
             "a2": Line(speaker: Some("player"), next: Some("a3")),
             "a3": Line(next: Some("a4")),
             "a4": Line(speaker: Some("giong_noi"), next: Some("a5")),
@@ -715,7 +731,7 @@
             "a22": Line(speaker: Some("ngoc_lao"), next: Some("a23")),
             "a23": Line(next: Some("a24")),
             "a24": Line(speaker: Some("lang_nha"), next: Some("a25")),
-            "a25": Line(speaker: Some("ngoc_lao"), next: None, effects: [Battle("ch1_lang_nha")]),
+            "a25": Line(speaker: Some("ngoc_lao"), next: None, effects: [Music(""), Battle("ch1_lang_nha")]),
         }),
         (id: "ch1_after_lang_nha", nodes: {
             "start": Line(speaker: Some("lang_nha"), next: Some("n2")),
@@ -767,6 +783,12 @@
             "t3": Line(speaker: Some("ngoc_lao"), next: Some("t4")),
             "t4": Line(speaker: Some("player"), next: None),
         }),
+        (id: "ch1_hu_thuoc", nodes: {
+            "start": Line(next: Some("h2")),
+            "h2": Line(next: Some("h3"), effects: [GiveItem("tu_khi_dan", 2), GiveItem("thuoc_tri_thuong", 1)]),
+            "h3": Line(speaker: Some("ngoc_lao"), next: Some("h4")),
+            "h4": Line(speaker: Some("ngoc_lao"), next: None),
+        }),
         (id: "ch1_farewell", nodes: {
             "start": Line(speaker: Some("ly_duc"), next: Some("f2")),
             "f2": Line(speaker: Some("player"), next: Some("f3")),
@@ -775,10 +797,16 @@
                        effects: [GiveMoney(30), GiveItem("thuoc_tri_thuong", 2)]),
             "f5": Line(speaker: Some("ngoc_lao"), next: Some("f6")),
             "f6": Line(next: Some("f7")),
-            "f7": Effects(effects: [SetFlag("ch1.complete", 1), Card("ch1_end"), Autosave], next: None),
+            "f7": Effects(effects: [SetFlag("ch1.complete", 1), Autosave, Card("ch1_end")], next: None),
         }),
         (id: "ch1_ly_duc_after", nodes: {
             "start": Line(speaker: Some("ly_duc"), next: None),
         }),
+    ],
+
+    shops: [
+        // Thím Ba's stall, open until the raid.
+        (id: "ch1_quan_thim_ba", buys: [Material],
+         sells: [(item: "banh_dau_xanh", stock: Some(6)), (item: "khoi_me_huong", stock: Some(1))]),
     ],
 )

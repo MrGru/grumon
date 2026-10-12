@@ -405,9 +405,34 @@ fn showcase_3_night_raid_two_approaches() {
 #[test]
 #[ignore]
 fn trace_one() {
+    // TRACE_ENCOUNTER=ch2_tieu_ty_1 TRACE_POLICY=brawler TRACE_CH2=3 \
+    //   cargo test trace_one -- --ignored --nocapture
     let db = db();
-    let p = progress(&db, false, &[("soi_nem", 3)]);
-    let mut b = BattleState::from_progress(&db, &p, "ch1_lang_dem", 13).expect("battle");
+    let encounter = std::env::var("TRACE_ENCOUNTER").unwrap_or_else(|_| "ch1_lang_dem".into());
+    let policy: Policy = match std::env::var("TRACE_POLICY").as_deref() {
+        Ok("naive") => naive,
+        Ok("careful") => careful,
+        Ok("patient") => patient,
+        Ok("greedy") => greedy,
+        Ok("brawler") => brawler,
+        Ok("ch2_party") => ch2_party,
+        _ => pusher,
+    };
+    let p = match std::env::var("TRACE_CH2")
+        .ok()
+        .and_then(|s| s.parse::<u8>().ok())
+    {
+        Some(stage) => {
+            let party: Vec<&str> = if std::env::var("TRACE_PARTY").is_ok() {
+                vec!["diep_han_suong", "ta_vo_uu"]
+            } else {
+                vec![]
+            };
+            ch2_progress(&db, stage, &party, &[("banh_dau_xanh", 2), ("soi_nem", 3)])
+        }
+        None => progress(&db, false, &[("soi_nem", 3)]),
+    };
+    let mut b = BattleState::from_progress(&db, &p, &encounter, 13).expect("battle");
     let mut seen = 0;
     for _ in 0..400 {
         if b.is_over() {
@@ -415,9 +440,12 @@ fn trace_one() {
         }
         match b.phase {
             Phase::Command(actor) => {
-                let c = pusher(&b, &db, actor);
+                let c = policy(&b, &db, actor);
                 let r = b.execute(&db, c.clone());
-                println!("CMD {c:?} -> {r:?} (ap left {})", b.units[actor].ap);
+                println!(
+                    "CMD {} {c:?} -> {r:?} (ap left {})",
+                    b.units[actor].def, b.units[actor].ap
+                );
                 if r.is_err() && b.execute(&db, Command::Guard).is_err() {
                     b.execute(&db, Command::EndTurn).ok();
                 }
@@ -434,6 +462,9 @@ fn trace_one() {
         b.phase,
         b.units.iter().map(|u| u.hp).collect::<Vec<_>>()
     );
+    for (i, u) in b.units.iter().enumerate() {
+        println!("unit {i} {} {:?} stats {:?}", u.def, u.side, u.stats);
+    }
 }
 
 #[test]
@@ -457,4 +488,223 @@ fn battle_cards_of_different_rows_never_overlap() {
             }
         }
     }
+}
+
+// ------------------------------------------------------------------ Chapter 2
+
+/// The protagonist in Chapter 2 at Luyện Khí `stage`, with companions joined.
+fn ch2_progress(db: &GameDb, stage: u8, companions: &[&str], items: &[(&str, u32)]) -> Progress {
+    let mut p = progress(db, true, items);
+    p.party[0].stage = stage;
+    let joins: Vec<StoryEffect> = companions
+        .iter()
+        .map(|c| StoryEffect::JoinParty((*c).to_string()))
+        .collect();
+    p.apply_all(&joins, db);
+    p
+}
+
+/// Trương Mặc's lesson: build Tụ khí, guard to keep it, release at stage 2.
+fn patient(b: &BattleState, db: &GameDb, actor: usize) -> Command {
+    let u = &b.units[actor];
+    let targets = b.valid_targets(actor, TargetKind::Enemy, true);
+    let Some(target) = weakest(b, &targets) else {
+        return Command::Guard;
+    };
+    let pha = Command::Skill("pha_thach_quyen".into(), Target::Unit(target));
+    if u.charge >= 2 && b.can(db, &pha).is_ok() {
+        return pha;
+    }
+    if b.can(db, &Command::Charge).is_ok() {
+        return Command::Charge;
+    }
+    if hp_pct(b, actor) < 35 && has_item(b, "banh_dau_xanh") {
+        return Command::Item("banh_dau_xanh".into(), Target::Unit(actor));
+    }
+    Command::Guard
+}
+
+/// Charges without guarding: what Mộc Nhân and drainers punish.
+fn greedy(b: &BattleState, db: &GameDb, actor: usize) -> Command {
+    let u = &b.units[actor];
+    let targets = b.valid_targets(actor, TargetKind::Enemy, true);
+    let Some(target) = weakest(b, &targets) else {
+        return Command::EndTurn;
+    };
+    let pha = Command::Skill("pha_thach_quyen".into(), Target::Unit(target));
+    if u.charge >= 3 && b.can(db, &pha).is_ok() {
+        return pha;
+    }
+    if b.can(db, &Command::Charge).is_ok() {
+        return Command::Charge;
+    }
+    Command::Strike(target)
+}
+
+/// Strikes, releases a stage-1 Phá Thạch Quyền whenever it can, guards channels.
+fn brawler(b: &BattleState, db: &GameDb, actor: usize) -> Command {
+    if hp_pct(b, actor) < 35 && has_item(b, "banh_dau_xanh") {
+        return Command::Item("banh_dau_xanh".into(), Target::Unit(actor));
+    }
+    if incoming_channel(b, actor).is_some() && b.units[actor].ap == 1 {
+        return Command::Guard;
+    }
+    let targets = b.valid_targets(actor, TargetKind::Enemy, true);
+    let Some(target) = weakest(b, &targets) else {
+        return Command::Guard;
+    };
+    let pha = Command::Skill("pha_thach_quyen".into(), Target::Unit(target));
+    if b.units[actor].charge >= 1 && b.can(db, &pha).is_ok() {
+        return pha;
+    }
+    if b.units[actor].ap >= 3 && b.can(db, &Command::Charge).is_ok() {
+        return Command::Charge;
+    }
+    Command::Strike(target)
+}
+
+/// A three-member party: the hero brawls, Diệp Hàn Sương charges her sword
+/// combo, Tạ Vô Ưu keeps a spirit up and drains.
+fn ch2_party(b: &BattleState, db: &GameDb, actor: usize) -> Command {
+    let u = &b.units[actor];
+    let targets = b.valid_targets(actor, TargetKind::Enemy, false);
+    let Some(target) = weakest(b, &targets) else {
+        return Command::Guard;
+    };
+    match u.def.as_str() {
+        "diep_han_suong" => {
+            let combo = Command::Skill("thanh_van_kiem_quyet".into(), Target::Unit(target));
+            if u.charge >= 1 && b.can(db, &combo).is_ok() {
+                return combo;
+            }
+            if b.can(db, &Command::Charge).is_ok() {
+                return Command::Charge;
+            }
+            Command::Strike(target)
+        }
+        "ta_vo_uu" => {
+            let spirit_up = b
+                .units
+                .iter()
+                .any(|v| v.alive() && v.summon.is_some_and(|s| s.owner == actor));
+            let call = Command::Artifact(0, Target::Myself);
+            if !spirit_up && b.can(db, &call).is_ok() {
+                return call;
+            }
+            let drain = Command::Skill("hon_hoa_phe_linh".into(), Target::Unit(target));
+            if b.can(db, &drain).is_ok() {
+                return drain;
+            }
+            Command::Guard
+        }
+        _ => brawler(b, db, actor),
+    }
+}
+
+#[test]
+fn ch2_battles_reward_the_new_lessons() {
+    let db = db();
+    let early = ch2_progress(&db, 2, &[], &[("banh_dau_xanh", 2)]);
+    let late = ch2_progress(&db, 3, &[], &[("banh_dau_xanh", 2), ("soi_nem", 3)]);
+    let dummies_patient = report(
+        "ch2_moc_nhan_tran patient",
+        &simulate(&db, &early, "ch2_moc_nhan_tran", patient),
+    );
+    let dummies_greedy = report(
+        "ch2_moc_nhan_tran greedy",
+        &simulate(&db, &early, "ch2_moc_nhan_tran", greedy),
+    );
+    let guard_brawl = report(
+        "ch2_tieu_ty_1 brawler",
+        &simulate(&db, &late, "ch2_tieu_ty_1", brawler),
+    );
+    let guard_patient = report(
+        "ch2_tieu_ty_1 patient",
+        &simulate(&db, &late, "ch2_tieu_ty_1", patient),
+    );
+    let drain_brawl = report(
+        "ch2_tieu_ty_2 brawler",
+        &simulate(&db, &late, "ch2_tieu_ty_2", brawler),
+    );
+    let drain_greedy = report(
+        "ch2_tieu_ty_2 greedy",
+        &simulate(&db, &late, "ch2_tieu_ty_2", greedy),
+    );
+    let liet_brawl = report(
+        "ch2_tieu_ty_3 brawler",
+        &simulate(&db, &late, "ch2_tieu_ty_3", brawler),
+    );
+    let liet_patient = report(
+        "ch2_tieu_ty_3 patient",
+        &simulate(&db, &late, "ch2_tieu_ty_3", patient),
+    );
+    let assassin = report(
+        "ch2_thich_khach brawler",
+        &simulate(&db, &late, "ch2_thich_khach", brawler),
+    );
+    let party = ch2_progress(&db, 3, &["diep_han_suong", "ta_vo_uu"], &[]);
+    let duo = report(
+        "ch2_ho_ve_hut_linh party",
+        &simulate(&db, &party, "ch2_ho_ve_hut_linh", ch2_party),
+    );
+    let duo_naive = report(
+        "ch2_ho_ve_hut_linh party naive",
+        &simulate(&db, &party, "ch2_ho_ve_hut_linh", naive),
+    );
+    // Mộc Nhân: guarding the charge is the safer way through.
+    assert!(dummies_patient.0 >= 90 && dummies_patient.1 > dummies_greedy.1 + 10);
+    // Lôi đài rounds and the assassin are winnable by sound play.
+    for (name, (rate, _)) in [
+        ("guardian", guard_brawl),
+        ("guardian patient", guard_patient),
+        ("drainer", drain_brawl),
+        ("drainer greedy", drain_greedy),
+        ("Liệt", liet_brawl),
+        ("Liệt patient", liet_patient),
+        ("assassin", assassin),
+        ("party", duo),
+        ("party naive", duo_naive),
+    ] {
+        assert!(rate >= 75, "{name}: {rate}% wins");
+    }
+}
+
+#[test]
+fn ch2_spirit_draws_the_blows() {
+    // Tạ Vô Ưu's Oán Hồn Vệ (Chiêu Hồn Phiên) taunts single-target attacks.
+    let db = db();
+    let party = ch2_progress(&db, 3, &["diep_han_suong", "ta_vo_uu"], &[]);
+    let mut summoned = 0;
+    let mut spirit_hits = 0;
+    for seed in 0..8u64 {
+        let mut b =
+            BattleState::from_progress(&db, &party, "ch2_ho_ve_hut_linh", seed).expect("battle");
+        for _ in 0..4000 {
+            if b.is_over() {
+                break;
+            }
+            match b.phase {
+                Phase::Command(actor) => {
+                    let c = ch2_party(&b, &db, actor);
+                    if b.execute(&db, c).is_err() && b.execute(&db, Command::Guard).is_err() {
+                        b.execute(&db, Command::EndTurn).ok();
+                    }
+                }
+                _ => b.step(&db),
+            }
+        }
+        for e in &b.log {
+            match e {
+                super::core::LogEntry::Summoned { .. } => summoned += 1,
+                super::core::LogEntry::Damage { target, .. }
+                    if b.units[*target].summon.is_some() =>
+                {
+                    spirit_hits += 1
+                }
+                _ => {}
+            }
+        }
+    }
+    assert!(summoned >= 8, "the spirit was called ({summoned})");
+    assert!(spirit_hits >= 8, "the spirit took hits ({spirit_hits})");
 }

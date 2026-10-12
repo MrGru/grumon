@@ -65,6 +65,12 @@ pub struct ArtifactSlot {
     pub cooldown: u8,
     /// Remaining uses this battle (`None` = unlimited).
     pub charges: Option<u8>,
+    /// Luyện khí: extra power of the active ability, in percent.
+    #[serde(default)]
+    pub power_pct: u32,
+    /// Luyện khí: activations removed from the active ability's cooldown.
+    #[serde(default)]
+    pub cooldown_cut: u8,
 }
 
 /// Target of a command, relative to the actor.
@@ -81,6 +87,13 @@ pub struct Channel {
     pub skill: String,
     pub target: Target,
     pub resolve_at: u32,
+    /// Power in percent when it resolves (refined artifacts exceed 100).
+    #[serde(default = "full_power")]
+    pub power: u32,
+}
+
+fn full_power() -> u32 {
+    100
 }
 
 /// What an enemy will do on its next activation (shown to the player).
@@ -133,11 +146,25 @@ pub struct Unit {
     pub nghich_menh: bool,
     pub shield_to_energy: bool,
     pub overheat: bool,
+    /// A summoned spirit: activations left before it fades, and its summoner.
+    #[serde(default)]
+    pub summon: Option<SummonState>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SummonState {
+    pub turns: u8,
+    pub owner: usize,
 }
 
 impl Unit {
     pub fn alive(&self) -> bool {
         self.hp > 0
+    }
+
+    /// Alive and not a summon: the units that decide victory and defeat.
+    pub fn fighting(&self) -> bool {
+        self.alive() && self.summon.is_none()
     }
 
     pub fn status(&self, kind: StatusKind) -> Option<&StatusInst> {
@@ -264,6 +291,13 @@ pub enum LogEntry {
         ticks: u32,
     },
     Ko {
+        unit: usize,
+    },
+    Summoned {
+        unit: usize,
+        owner: usize,
+    },
+    Dissipated {
         unit: usize,
     },
     Combo {
@@ -428,6 +462,7 @@ fn unit_from_character(
         nghich_menh: def.nghich_menh,
         shield_to_energy: false,
         overheat: false,
+        summon: None,
     };
     for id in artifacts {
         let Some(art) = db.artifacts.get(id) else {
@@ -437,6 +472,8 @@ fn unit_from_character(
             id: id.clone(),
             cooldown: 0,
             charges: art.charges_per_battle,
+            power_pct: 0,
+            cooldown_cut: 0,
         });
         for passive in &art.passives {
             match passive {
@@ -498,6 +535,7 @@ fn unit_from_enemy(def: &EnemyDef, slot: Slot) -> Unit {
         nghich_menh: false,
         shield_to_energy: false,
         overheat: false,
+        summon: None,
     }
 }
 
@@ -536,6 +574,24 @@ impl BattleState {
             // Mortals cannot gather qi yet (Tụ khí unlocks at Luyện Khí).
             if member.realm == Realm::PhamNhan {
                 unit.max_charge = 0;
+            }
+            // Luyện khí gains of each equipped artifact.
+            for slot in &mut unit.artifacts {
+                let level = progress.artifact_levels.get(&slot.id).copied().unwrap_or(0);
+                let Some(def) = db.artifacts.get(&slot.id) else {
+                    continue;
+                };
+                for step in def.refine.iter().take(level as usize) {
+                    match step.gain {
+                        RefineGain::Power(pct) => slot.power_pct += pct,
+                        RefineGain::Cooldown(n) => slot.cooldown_cut += n,
+                        RefineGain::Charges(n) => {
+                            if let Some(c) = &mut slot.charges {
+                                *c += n;
+                            }
+                        }
+                    }
+                }
             }
             units.push(unit);
         }

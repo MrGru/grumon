@@ -92,11 +92,15 @@ duplicate IDs.
 ### 3.1 Item
 
 ```ron
-(id: "thanh_tam_thao", category: Material, rarity: Common, price: 3,
- use: None)                                   // or Some(Heal(30)), Some(RestoreLl(20)), ...
+(id: "hoi_khi_tan", category: Medicine, rarity: Uncommon, price: 15,
+ battle_use: [RestoreLl(50)], target: Ally),
+(id: "tu_khi_dan", category: Medicine, rarity: Uncommon, price: 40, field_use: [TuVi(40)]),
 ```
 `category`: `Medicine | Material | Artifact | Quest`. `rarity`: `Common | Uncommon | Rare | Epic | Legendary`.
-In battle, `use` effects are `BattleEffect`s (§3.3). Quest items cannot be sold or dropped.
+`battle_use` are `BattleEffect`s (§3.3) with a `target`. `field_use` are used from the pause menu:
+`TuVi(n)` and `Breakthrough(realm)` ask for a party member; `Story(effect)` runs any story effect.
+Refusals (mortal, not at Đỉnh phong, wrong realm…) come from `party.rs` with `reason.party.*` keys.
+Quest items cannot be sold or dropped.
 
 ### 3.2 Skill (technique, also used for artifact actives and enemy attacks)
 
@@ -118,6 +122,8 @@ Delay(ticks)  Haste(ticks)      Interrupt             GainCharge(n)
 ConsumeChargeDamage(power_per_stage, scaling)          // Xích Viêm Châu
 BreakNode     FormationEnergy(n)                      SetElement(element, turns)
 StunIfChanneling(else_power)                          // Phá Sơn Ấn
+ReleaseStoredLl                                       // Tụ Linh Hồ Lô
+Summon(summon_id)                                     // Chiêu Hồn Phiên (§3.4b)
 ```
 
 ### 3.4 Artifact
@@ -127,6 +133,17 @@ StunIfChanneling(else_power)                          // Phá Sơn Ấn
  charges_per_battle: Some(2), passives: [StoreLl(30)])
 ```
 Passives: `StoreLl(cap)`, `LlRegen(n)`, `SpeedBonus(n)`, `ShieldToEnergy`, `BossResistance`, `Overheat`.
+`bound: true` marks a Bản Mệnh artifact that only the protagonist can equip. Unequipped artifacts
+live in the bag (`Progress.items`); the party tab moves them between the bag and members, limited
+by the realm's slots.
+
+### 3.4b Summon
+
+```ron
+summons: [(id: "oan_hon_ve", sheet: 8, tint: Some((0.55, 0.75, 1.0)), hp_pct: 45, def_pct: 120,
+           turns: 2, taunt: true)]
+```
+Name key: `summon.<id>.name`. Rules in game-systems §6.4.
 
 ### 3.5 Formation
 
@@ -139,6 +156,10 @@ Passives: `StoreLl(cap)`, `LlRegen(n)`, `SpeedBonus(n)`, `ShieldToEnergy`, `Boss
  ],
  release: [ShieldAllPct(10)])
 ```
+Pulses/releases: `ShieldAllPct`, `HealAllPct`, `CleanseAll`, `RestoreLlAllPct`, `StrikeAll(power)`,
+`InterruptAllEnemies`, `StatusAllEnemies(status, turns)`, `StatusAllAllies(status, turns)`,
+`StatusRow(Front|Middle|Back, status, turns)`, `HasteAll(ticks)`, `DelayAllEnemies(ticks)`.
+Auras: `WardEachActivation`, `AtkPct`, `DefPct`, `LlRegen`, `ComboEnergy`, `FreeSwap`.
 
 ### 3.6 Enemy
 
@@ -153,6 +174,10 @@ Passives: `StoreLl(cap)`, `LlRegen(n)`, `SpeedBonus(n)`, `ShieldToEnergy`, `Boss
  tu_vi: 40, drops: [("linh_lang_nanh", 1)], archetype: Interrupter)
 ```
 `sheet` uses the shared character sheets; `sprite: Some("path")` points to a dedicated image.
+AI conditions: `Always`, `SelfHpBelow(%)`, `FoeCharging(stage)`, `FoeChanneling`,
+`FormationPhaseAtLeast(n)`, `EveryNth(n, offset)`, `AllyHpBelow(%)`, `FoeHasShield`,
+`AllyLacks(status)`. Targets: `Front`, `LowestHp`, `Charging`, `Channeling`, `FormationNode`,
+`Random`, `SelfUnit`, `AllFoes`, `LowestHpAlly`.
 
 ### 3.7 Encounter
 
@@ -167,11 +192,14 @@ Passives: `StoreLl(cap)`, `LlRegen(n)`, `SpeedBonus(n)`, `ShieldToEnergy`, `Boss
 ### 3.8 Character (playable / guest)
 
 ```ron
-(id: "ong_mac", sheet: 10, element: Moc,
- base: (hp: 220, ll: 80, atk: 14, spi: 24, def: 14, tp: 34), growth: (hp: 0, ...),
- skills: ["ong_mac_thanh_moc_cham"], artifacts: ["huyen_quy_thuan"])
+(id: "ta_vo_uu", sheet: 4, element: Hoa, slot: Middle,
+ base: (hp: 74, ll: 34, atk: 8, spi: 12, def: 4, tp: 40),
+ growth: (hp: 30, ll: 24, atk: 4, spi: 7, def: 2, tp: 6),
+ skills: ["hon_hoa_phe_linh"], artifacts: ["chieu_hon_phien"])
 ```
-The protagonist is `player`; its sheet comes from the save profile.
+The protagonist is `player`; its sheet comes from the save profile. `slot` (default `Front`) is the
+battle row a companion takes when joining; `JoinParty` sets the realm and stage to the
+protagonist's. `nghich_menh: true` allows Quá Tụ.
 
 ### 3.9 NPC
 
@@ -219,8 +247,9 @@ SetFlag(name, n)  AddFlag(name, n)  GiveItem(id, n)  TakeItem(id, n)  GiveMoney(
 StartQuest(id)  CompleteQuest(id)  FailQuest(id)
 Dialogue(id)   Battle(encounter_id)   Warp(level, x, y)   Card(chapter_key)
 JoinParty(id)  LeaveParty(id)  LearnSkill(member, skill)  GiveArtifact(member, artifact)
-EquipArtifact(member, artifact)  Trust(character, n)   GainTuVi(n)   SetRealm(realm, stage)
-HealParty   Autosave   TimeOfDay(Day|Dusk|Night|Raid|Dawn)   Notify(key)
+Trust(character, n)   GainTuVi(n)   SetRealm(realm, stage)   SetFormation(Some(id)|None)
+HealParty   Autosave   TimeOfDay(Day|Dusk|Night|Raid|Dawn)   Notify(key)   SetChapter(n)
+Music(track | "")   LearnFormation(id)   OpenShop(id)   OpenCraft(Alchemy|Forge)   LearnRecipe(id)
 ```
 `Dialogue`, `Battle`, `Warp` and `Card` are *queued* and start after the current dialogue closes.
 
@@ -260,6 +289,33 @@ triggered), only while exploring.
 
 Map placements live in `assets/world.ldtk` and are written by `tools/build_ch1_map.py`, which is
 idempotent (re-running it replaces its own placements).
+
+### 3.15 Levels (music)
+
+Every LDtk level needs a `levels` entry (the validator checks both directions):
+
+```ron
+levels: [(id: "Village", music: "village",
+          music_by_time: {Night: "night", Raid: "raid", Dawn: "sorrow"})]
+```
+Tracks are file stems in `assets/audio/music/`. An encounter may set `music: Some("raid")`
+(default: `boss` if any enemy is a boss, else `battle`). The story effect `Music("sorrow")`
+overrides the map music until `Music("")`.
+
+### 3.16 Shops, recipes and refinement
+
+```ron
+shops: [(id: "ch1_quan_thim_ba", buys: [Material], buy_pct: 50,
+         sells: [(item: "banh_dau_xanh", stock: Some(6)), (item: "khoi_me_huong", price: Some(12))])],
+recipes: [(id: "tri_thuong_tan", product: "thuoc_tri_thuong", count: 1,
+           ingredients: [("thanh_tam_thao", 1), ("da_tru_nanh", 1)], difficulty: 20, money: 2)],
+// on an artifact:
+refine: [(materials: [("linh_lang_nanh", 2)], money: 20, gain: Charges(1)),
+         (materials: [("huyen_thiet", 2)], money: 80, gain: Power(25))]
+```
+Names: `shop.<id>.name`, `recipe.<id>.name`. Effects: `OpenShop(id)`, `OpenCraft(Alchemy|Forge)`,
+`LearnRecipe(id)`. Save fields: `recipes_known`, `shop_bought` (`shop/item` → units),
+`artifact_levels`, `alchemy_xp`. Rules: game-systems §10.
 
 ## 4. Chapters
 
@@ -324,8 +380,15 @@ into place. Loading falls back to `.bak` when the main file is missing or corrup
   "summary": { "player_name": "Lâm Vô Trần", "chapter": 1, "level": "Forest", "play_time": 1234, "realm": "luyen_khi", "stage": 0 },
   "progress": { "profile": {...}, "flags": {...}, "inventory": {...}, "quests": {...}, "party": {...}, "money": 0, "level": "Forest", "feet": [100, 200] },
   "dialogue": null | { "dialogue": "ch1_lien_bridge", "node": "ask" },
-  "battle": null | { ...BattleState... }
+  "battle": null | { ...BattleState... },
+  "pending_actions": [ ...QueuedAction... ]
 }
 ```
+`pending_actions` preserves deferred story actions in order, after resuming the active dialogue or
+battle. It defaults to an empty list for older v1 saves. A completed battle is kept until the player
+confirms its result, so loading cannot discard unclaimed rewards. Retrying a loaded battle rebuilds
+its initial state from the pre-battle progress. Saves are captured after gameplay updates, and the
+action queue waits on a save frame to avoid removing a pending action before the snapshot.
+
 `version` is bumped on breaking changes; `save::migrate(serde_json::Value)` upgrades older files step
 by step before deserialising. Unknown future versions are refused with a Vietnamese error message.

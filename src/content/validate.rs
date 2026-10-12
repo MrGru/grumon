@@ -79,6 +79,8 @@ pub struct ExternalRefs {
     pub object_ids: Vec<String>,
     /// Battle background IDs that have an image.
     pub backgrounds: Vec<String>,
+    /// Music track IDs that have a file (`assets/audio/music`).
+    pub music: Vec<String>,
 }
 
 struct Checker<'a> {
@@ -114,6 +116,12 @@ impl Checker<'_> {
     fn skill(&mut self, id: &str, ctx: &str) {
         if !self.db.skills.contains_key(id) {
             self.err(format!("{ctx}: unknown skill `{id}`"));
+        }
+    }
+
+    fn music(&mut self, track: &str, ctx: &str) {
+        if !self.ext.music.is_empty() && !self.ext.music.iter().any(|m| m == track) {
+            self.err(format!("{ctx}: unknown music track `{track}`"));
         }
     }
 
@@ -198,7 +206,7 @@ impl Checker<'_> {
                         self.need_key(format!("char.{character}.name"), ctx);
                     }
                 }
-                StoryEffect::SetFormation(Some(id)) => {
+                StoryEffect::SetFormation(Some(id)) | StoryEffect::LearnFormation(id) => {
                     if !self.db.formations.contains_key(id) {
                         self.err(format!("{ctx}: unknown formation `{id}`"));
                     }
@@ -213,16 +221,36 @@ impl Checker<'_> {
                 | StoryEffect::TimeOfDay(_)
                 | StoryEffect::SetFormation(None)
                 | StoryEffect::SetChapter(_) => {}
+                StoryEffect::OpenShop(id) => {
+                    if !self.db.shops.contains_key(id) {
+                        self.err(format!("{ctx}: unknown shop `{id}`"));
+                    }
+                }
+                StoryEffect::LearnRecipe(id) => {
+                    if !self.db.recipes.contains_key(id) {
+                        self.err(format!("{ctx}: unknown recipe `{id}`"));
+                    }
+                }
+                StoryEffect::OpenCraft(_) => {}
+                StoryEffect::Music(track) => {
+                    if !track.is_empty() {
+                        self.music(track, ctx);
+                    }
+                }
             }
         }
     }
 
     fn battle_effects(&mut self, effects: &[BattleEffect], ctx: &str) {
         for effect in effects {
-            if let BattleEffect::Damage { hits, .. } = effect
-                && *hits == 0
-            {
-                self.err(format!("{ctx}: damage with 0 hits"));
+            match effect {
+                BattleEffect::Damage { hits: 0, .. } => {
+                    self.err(format!("{ctx}: damage with 0 hits"));
+                }
+                BattleEffect::Summon(id) if !self.db.summons.contains_key(id) => {
+                    self.err(format!("{ctx}: unknown summon `{id}`"));
+                }
+                _ => {}
             }
         }
     }
@@ -355,6 +383,38 @@ pub fn validate(db: &GameDb, locale: &Locale, ext: &ExternalRefs) -> Vec<String>
             ));
         }
     }
+    for shop in db.shops.values() {
+        let ctx = format!("shop `{}`", shop.id);
+        c.need_key(format!("shop.{}.name", shop.id), &ctx);
+        for entry in &shop.sells {
+            c.item(&entry.item, &ctx);
+        }
+    }
+    for recipe in db.recipes.values() {
+        let ctx = format!("recipe `{}`", recipe.id);
+        c.need_key(format!("recipe.{}.name", recipe.id), &ctx);
+        c.item(&recipe.product, &ctx);
+        for (item, n) in &recipe.ingredients {
+            c.item(item, &ctx);
+            if *n == 0 {
+                c.err(format!("{ctx}: ingredient `{item}` with count 0"));
+            }
+        }
+    }
+    for artifact in db.artifacts.values() {
+        for step in &artifact.refine {
+            for (item, _) in &step.materials {
+                c.item(item, &format!("artifact `{}` refinement", artifact.id));
+            }
+        }
+    }
+    for summon in db.summons.values() {
+        let ctx = format!("summon `{}`", summon.id);
+        c.need_key(format!("summon.{}.name", summon.id), &ctx);
+        if summon.turns == 0 || summon.hp_pct == 0 {
+            c.err(format!("{ctx}: needs turns and hp_pct above 0"));
+        }
+    }
     for status in StatusKind::ALL {
         c.need_key(format!("status.{}.name", status.id()), "status");
         c.need_key(format!("status.{}.desc", status.id()), "status");
@@ -427,6 +487,9 @@ pub fn validate(db: &GameDb, locale: &Locale, ext: &ExternalRefs) -> Vec<String>
         ) && encounter.can_flee
         {
             c.err(format!("{ctx}: story objectives should not allow fleeing"));
+        }
+        if let Some(track) = &encounter.music {
+            c.music(track, &ctx);
         }
         if !ext.backgrounds.is_empty() && !ext.backgrounds.contains(&encounter.background) {
             c.err(format!(
@@ -520,6 +583,21 @@ pub fn validate(db: &GameDb, locale: &Locale, ext: &ExternalRefs) -> Vec<String>
     }
     for level in &ext.levels {
         c.need_key(format!("map.{level}.name"), "LDtk level");
+        if !db.levels.contains_key(level) {
+            c.err(format!(
+                "LDtk level `{level}` has no level definition (music)"
+            ));
+        }
+    }
+    for level in db.levels.values() {
+        let ctx = format!("level `{}`", level.id);
+        if !ext.levels.is_empty() && !ext.levels.contains(&level.id) {
+            c.err(format!("{ctx}: not an LDtk level"));
+        }
+        c.music(&level.music, &ctx);
+        for track in level.music_by_time.values() {
+            c.music(track, &ctx);
+        }
     }
     for id in &ext.npc_ids {
         if !db.npcs.contains_key(id) {

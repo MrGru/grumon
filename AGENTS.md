@@ -6,6 +6,7 @@ Guide for AI coding agents (Claude Code, Codex, Cursor, ...) and human contribut
 Other docs:
 - Project overview: [README.md](README.md).
 - Status and next tasks: [plan.md](plan.md).
+- PR demo, QA checkpoints and manual checks: [docs/playtest.md](docs/playtest.md).
 - Rules and formulas: [docs/game-systems.md](docs/game-systems.md).
 - Data formats: [docs/content-schema.md](docs/content-schema.md).
 - Writing rules: [docs/vietnamese-style-guide.md](docs/vietnamese-style-guide.md).
@@ -31,10 +32,12 @@ cargo test                     # all tests: logic, content validation, battle ba
 cargo test balance -- --nocapture   # print battle simulation win rates
 QA_SAVE_DIR=/tmp/qa cargo test export_qa_saves -- --ignored   # saves that start inside Ch1 battles
 THIEN_MENH_SAVE_DIR=/tmp/qa cargo run                            # ...then load them from the title
-cargo clippy --all-targets     # lint; keep it warning-free
+cargo clippy --all-targets -- -D warnings # lint; keep it warning-free
 cargo fmt                      # format before committing
 cargo build --release          # size-optimized release build
 python3 tools/gen_art.py       # regenerate generated art (needs Pillow)
+python3 tools/gen_audio.py     # regenerate music and sound effects (needs numpy and ffmpeg)
+python3 tools/gen_portraits.py # regenerate dialogue portraits (needs Pillow)
 python3 tools/build_ch1_map.py # re-place Chapter 1 entities in world.ldtk (idempotent)
 ```
 
@@ -53,15 +56,19 @@ Set `THIEN_MENH_SAVE_DIR` to keep test saves out of your real save directory.
 | `src/story.rs` | `Progress`: flags, inventory, quests, party, cultivation. Applies `StoryEffect`s and evaluates `Condition`s (pure, no ECS) |
 | `src/flow.rs` | New game / load bridge, `ActionQueue` for deferred story actions, the `Story` system param, play time, F5/F9 |
 | `src/save.rs` | Save files (versioned JSON, atomic write, `.bak` fallback, migrations), slots |
-| `src/dialogue.rs` | Dialogue graph walker (`DialogueHost`), dialogue box UI with choices |
+| `src/dialogue.rs` | Dialogue graph walker (`DialogueHost`), dialogue box UI with choices and the speaker's portrait |
 | `src/battle/core/` | Deterministic battle engine: `state.rs`, `engine.rs`, `ai.rs`, `rng.rs`, `tests.rs` (no ECS) |
 | `src/battle/` | `mod.rs` battle session and input, `view.rs` UI, `text.rs` log/names, `balance_tests.rs` simulations |
 | `src/character_creation.rs` | Name entry (Telex/IME), addressing, appearance, confirmation |
 | `src/telex.rs` | Built-in Telex input engine |
 | `src/main_menu.rs` | Title screen and load view |
-| `src/pause_menu.rs` | Pause menu tabs (party, inventory, journal, save, load, settings), `Settings` |
+| `src/economy.rs` | Shops, Luyện đan and Luyện khí rules on `Progress` (pure, tested) |
+| `src/workshop.rs` | Workshop screen (`PlayState::Workshop`): shop buy/sell, alchemy, refinement |
+| `src/party.rs` | Party logic on `Progress` (pure): item use outside battle, breakthroughs, equip/unequip, battle rows, order, formation readiness |
+| `src/pause_menu/` | Pause menu: `mod.rs` tabs, submenus and `Settings`; `party_tab.rs` (rows, order, artifacts, formation); `inventory_tab.rs` (bag, item use) |
 | `src/hud.rs` | Notices, quest tracker, map banner, controls hint, chapter/story cards |
 | `src/screen_fx.rs` | Time-of-day tint, raid rain, `fx.blackout` overlay |
+| `src/audio.rs` | Music selection and cross-fades (`LevelDef`, encounter `music`, `StoryEffect::Music`), the `Sfx` message and `sound` IDs |
 | `src/ui.rs` | Palette, fonts, panels, menu rows (shared UI helpers) |
 | `src/input.rs` | `MenuInput`: keyboard + gamepad mapped to actions |
 | `src/level.rs` | LDtk world, `LevelInfo` (wall grid), props (trees, houses), `Warp` entities |
@@ -74,8 +81,8 @@ Set `THIEN_MENH_SAVE_DIR` to keep test saves out of your real save directory.
 | `src/ysort.rs` | Depth sorting by feet position |
 | `src/animation.rs` | Sprite-sheet animation, `Facing` |
 | `src/story_tests.rs` | Scripted Chapter 1 playthroughs (test only) |
-| `src/debug.rs` | Debug builds only: F1 inspector, F2 collision gizmos |
-| `tools/` | `build_ch1_map.py` (LDtk placements), `gen_art.py` (art generator) |
+| `src/debug.rs` | Debug builds only: F1 inspector, F2 collision gizmos, F3/F4 open the forge / alchemy screen |
+| `tools/` | `build_ch1_map.py` (LDtk placements), `gen_art.py` (art generator), `gen_audio.py` (music and sound generator), `gen_portraits.py` (dialogue portraits) |
 
 ## State machine
 
@@ -84,7 +91,7 @@ GameState:  Loading ──► Menu ──► CharacterCreation ──► Startin
                          ▲  └────────── (load save) ────────┘          │
                          └──────────────── (to title) ─────────────────┘
 PlayState (sub-state of Playing, starts in Transition):
-  Transition ──► Exploring ◄──► Dialogue | Battle | Paused | Card
+  Transition ──► Exploring ◄──► Dialogue | Battle | Paused | Card | Workshop
 ```
 
 Gate every gameplay system with `run_if(in_state(...))`. The player only moves in

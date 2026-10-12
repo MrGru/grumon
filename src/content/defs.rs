@@ -25,6 +25,132 @@ pub struct DataFile {
     pub triggers: Vec<TriggerDef>,
     pub objects: Vec<ObjectDef>,
     pub chapters: Vec<ChapterDef>,
+    pub levels: Vec<LevelDef>,
+    pub summons: Vec<SummonDef>,
+    pub shops: Vec<ShopDef>,
+    pub recipes: Vec<RecipeDef>,
+}
+
+// ---------------------------------------------------------------------------
+// Economy and crafting (game-systems §10)
+// ---------------------------------------------------------------------------
+
+/// A shop: what it sells (with optional limited stock) and which categories it buys.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ShopDef {
+    pub id: String,
+    pub sells: Vec<ShopEntry>,
+    #[serde(default)]
+    pub buys: Vec<ItemCategory>,
+    /// Percentage of an item's price paid when the shop buys it.
+    #[serde(default = "half")]
+    pub buy_pct: u32,
+}
+
+fn half() -> u32 {
+    50
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ShopEntry {
+    pub item: String,
+    /// Overrides the item's own price.
+    #[serde(default)]
+    pub price: Option<u32>,
+    /// Total units for sale over the whole game (`None` = unlimited).
+    #[serde(default)]
+    pub stock: Option<u32>,
+}
+
+/// A Luyện đan recipe. Quality = 60 + 10 × alchemy level − difficulty.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RecipeDef {
+    pub id: String,
+    pub product: String,
+    #[serde(default = "one_u32")]
+    pub count: u32,
+    pub ingredients: Vec<(String, u32)>,
+    pub difficulty: u32,
+    /// Đồng tiền for fuel and auxiliary herbs.
+    #[serde(default)]
+    pub money: u32,
+}
+
+fn one_u32() -> u32 {
+    1
+}
+
+/// One Luyện khí step of an artifact.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RefineStep {
+    pub materials: Vec<(String, u32)>,
+    #[serde(default)]
+    pub money: u32,
+    pub gain: RefineGain,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum RefineGain {
+    /// The active ability's damage, healing and shields grow by this percentage.
+    Power(u32),
+    /// The active ability's cooldown shrinks by this many activations.
+    Cooldown(u8),
+    /// More uses per battle (artifacts with limited charges).
+    Charges(u8),
+}
+
+/// Where crafting happens.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Station {
+    /// Luyện đan: brew known recipes.
+    Alchemy,
+    /// Luyện khí: refine owned artifacts.
+    Forge,
+}
+
+/// A battle summon (`BattleEffect::Summon`): a short-lived spirit on the
+/// summoner's side that does not act, only guards. Name: `summon.<id>.name`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SummonDef {
+    pub id: String,
+    #[serde(default)]
+    pub sheet: usize,
+    #[serde(default)]
+    pub sprite: Option<String>,
+    #[serde(default)]
+    pub tint: Option<(f32, f32, f32)>,
+    /// Khí huyết as a percentage of the summoner's maximum.
+    pub hp_pct: u32,
+    /// Thủ as a percentage of the summoner's.
+    #[serde(default = "hundred")]
+    pub def_pct: u32,
+    /// Own activations before it fades.
+    pub turns: u8,
+    /// Forces single-target attacks onto itself (Khiêu khích).
+    #[serde(default)]
+    pub taunt: bool,
+}
+
+fn hundred() -> u32 {
+    100
+}
+
+/// Per-map settings that are not part of the LDtk layout.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LevelDef {
+    /// LDtk level identifier.
+    pub id: String,
+    /// Music track (`assets/audio/music/<id>.ogg`) while exploring.
+    pub music: String,
+    /// Track overrides by time of day.
+    #[serde(default)]
+    pub music_by_time: BTreeMap<TimeOfDay, String>,
 }
 
 // ---------------------------------------------------------------------------
@@ -152,6 +278,18 @@ impl Realm {
         &self.key()["realm.".len()..]
     }
 
+    /// The next major realm.
+    pub fn next(self) -> Option<Realm> {
+        match self {
+            Realm::PhamNhan => Some(Realm::LuyenKhi),
+            Realm::LuyenKhi => Some(Realm::TrucCo),
+            Realm::TrucCo => Some(Realm::KetDan),
+            Realm::KetDan => Some(Realm::NguyenAnh),
+            Realm::NguyenAnh => Some(Realm::HoaThan),
+            Realm::HoaThan => None,
+        }
+    }
+
     /// Number of equipped artifact slots (game-systems §6.1).
     pub fn artifact_slots(self) -> usize {
         match self {
@@ -163,7 +301,9 @@ impl Realm {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize,
+)]
 pub enum TimeOfDay {
     #[default]
     Day,
@@ -260,6 +400,28 @@ pub struct ItemDef {
     pub battle_use: Vec<BattleEffect>,
     #[serde(default = "default_item_target")]
     pub target: TargetKind,
+    /// Effects when used from the pause menu. Empty = not usable there.
+    #[serde(default)]
+    pub field_use: Vec<FieldEffect>,
+}
+
+/// Effect of using an item outside battle (pause menu, `party.rs`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum FieldEffect {
+    /// Tu vi for the chosen party member.
+    TuVi(u32),
+    /// The chosen member breaks through to this realm; needs the peak
+    /// (Đỉnh phong) of the realm before it.
+    Breakthrough(Realm),
+    /// A story effect without a target.
+    Story(StoryEffect),
+}
+
+impl FieldEffect {
+    /// Whether the player must pick a party member.
+    pub fn needs_member(&self) -> bool {
+        matches!(self, FieldEffect::TuVi(_) | FieldEffect::Breakthrough(_))
+    }
 }
 
 fn default_item_target() -> TargetKind {
@@ -415,6 +577,8 @@ pub enum BattleEffect {
         else_power: u32,
     },
     ReleaseStoredLl,
+    /// Calls a `SummonDef` onto the user's side (replacing the user's previous one).
+    Summon(String),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -479,6 +643,12 @@ pub struct ArtifactDef {
     pub charges_per_battle: Option<u8>,
     #[serde(default)]
     pub passives: Vec<ArtifactPassive>,
+    /// Bound to the protagonist (Bản Mệnh): cannot be given to companions.
+    #[serde(default)]
+    pub bound: bool,
+    /// Luyện khí steps, applied in order.
+    #[serde(default)]
+    pub refine: Vec<RefineStep>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -492,6 +662,8 @@ pub enum FormationEffect {
     InterruptAllEnemies,
     StatusAllEnemies(StatusKind, u8),
     StatusAllAllies(StatusKind, u8),
+    /// A status on every party member in one row.
+    StatusRow(Slot, StatusKind, u8),
     HasteAll(u32),
     DelayAllEnemies(u32),
 }
@@ -505,6 +677,8 @@ pub enum FormationAura {
     LlRegen(u32),
     /// Extra energy per Tương sinh combo.
     ComboEnergy(u32),
+    /// Đổi vị trí costs no Điểm hành động for formation nodes.
+    FreeSwap,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -559,6 +733,8 @@ pub enum AiCond {
     EveryNth(u32, u32),
     AllyHpBelow(u32),
     FoeHasShield,
+    /// Some living ally (or the unit itself) lacks this status.
+    AllyLacks(StatusKind),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -664,6 +840,9 @@ pub struct EncounterDef {
     /// Locale keys of hints shown in the battle hint panel.
     #[serde(default)]
     pub hints: Vec<String>,
+    /// Music track; `boss` when any enemy is a boss, `battle` otherwise.
+    #[serde(default)]
+    pub music: Option<String>,
 }
 
 // ---------------------------------------------------------------------------
@@ -688,6 +867,13 @@ pub struct CharacterDef {
     /// Practises Nghịch Mệnh Quyết: can overcharge to Tụ khí stage 4.
     #[serde(default)]
     pub nghich_menh: bool,
+    /// Battle row when joining the party (casters stand further back).
+    #[serde(default = "front_slot")]
+    pub slot: Slot,
+}
+
+fn front_slot() -> Slot {
+    Slot::Front
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -840,7 +1026,17 @@ pub enum StoryEffect {
     TimeOfDay(TimeOfDay),
     Notify(String),
     SetFormation(Option<String>),
+    /// The party can now choose this formation in the pause menu.
+    LearnFormation(String),
     SetChapter(u8),
+    /// Story music that overrides the map's track; `""` returns to the map music.
+    Music(String),
+    /// Opens a shop screen (queued like a dialogue).
+    OpenShop(String),
+    /// Opens a crafting screen.
+    OpenCraft(Station),
+    /// The player can now brew this recipe.
+    LearnRecipe(String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

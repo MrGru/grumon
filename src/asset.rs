@@ -39,6 +39,15 @@ pub struct GameAssets {
     /// Dedicated enemy sprites, keyed by path (`gfx/enemies/<id>.png`).
     #[asset(path = "gfx/enemies", collection(typed, mapped))]
     pub enemy_sprites: HashMap<String, Handle<Image>>,
+    /// Music loops, keyed by path (`audio/music/<id>.ogg`).
+    #[asset(path = "audio/music", collection(typed, mapped))]
+    pub music: HashMap<String, Handle<AudioSource>>,
+    /// Sound effects, keyed by path (`audio/sfx/<id>.ogg`).
+    #[asset(path = "audio/sfx", collection(typed, mapped))]
+    pub sfx: HashMap<String, Handle<AudioSource>>,
+    /// Dialogue portraits, keyed by path (`gfx/portraits/<id>.png`).
+    #[asset(path = "gfx/portraits", collection(typed, mapped))]
+    pub portraits: HashMap<String, Handle<Image>>,
     #[asset(path = "gfx/ui/title.png")]
     pub title_background: Handle<Image>,
     /// Body and UI text (Vietnamese coverage).
@@ -77,6 +86,21 @@ impl GameAssets {
         self.battle_backgrounds
             .get(&format!("gfx/battle/{id}.png"))
             .cloned()
+    }
+
+    /// Portrait for a dialogue speaker: a character id, or `player_<sheet>`.
+    pub fn portrait(&self, id: &str) -> Option<Handle<Image>> {
+        self.portraits
+            .get(&format!("gfx/portraits/{id}.png"))
+            .cloned()
+    }
+
+    pub fn music_track(&self, id: &str) -> Option<Handle<AudioSource>> {
+        self.music.get(&format!("audio/music/{id}.ogg")).cloned()
+    }
+
+    pub fn sound(&self, id: &str) -> Option<Handle<AudioSource>> {
+        self.sfx.get(&format!("audio/sfx/{id}.ogg")).cloned()
     }
 
     pub fn enemy_sprite(&self, path: &str) -> Option<Handle<Image>> {

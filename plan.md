@@ -3,7 +3,7 @@
 Production plan, current status and risks. A box is ticked **only** when the feature works in the
 game and a test or a recorded in-game check backs it up. "Evidence" names the test or check.
 
-Last updated: 2026-10-08.
+Last updated: 2026-10-12.
 
 Status legend: `[x]` done · `[~]` partly done (the note says what is missing) · `[ ]` not started.
 
@@ -12,13 +12,31 @@ Status legend: `[x]` done · `[~]` partly done (the note says what is missing) �
 ## Current state in one paragraph
 
 Milestone 1 is complete. Chapter 1 can be played from the prologue to the farewell at dawn: 5
-battles, 3 side quests, about 800 Vietnamese strings. Scripted playthrough tests cover the
-chapter, but only part of it has been checked by hand in the running game (see M2). The battle
-engine already implements every core system (timeline, ĐHĐ/Linh lực, Tụ khí, channels, push and
-pull, formations, artifacts, elements). Content counts are still below the targets (see M3). There
-is no audio, there are no portraits, and the tileset is the original Grumon placeholder.
+battles, 3 side quests, about 850 Vietnamese strings, generated music, sound effects and dialogue
+portraits. Scripted playthrough tests cover the whole chapter, and the chapter end, every battle
+type and saving inside dialogue and battle have been checked by hand in the running game. The battle
+engine implements every core system and the Milestone 3 content targets for combat are met
+(6 formations, 13 artifacts, 8 Tụ khí techniques, 6 enemy archetypes). Party management, equipment
+and item use work from the pause menu. Shops and alchemy are playable in Ch1; refinement rules and UI are implemented, with the story
+station planned for Ch2. Still missing: Chapters 2–8 (only Chapter 2's battle content exists), a
+listening pass on the audio, and a xianxia tileset to replace the original Grumon placeholder.
 
 ---
+
+## Nearest delivery boundary — Chapter 1 PR playtest
+
+Scope: the existing complete Chapter 1 story, combat, party/equipment, shops and alchemy, with
+placeholder presentation. This is the gameplay demo boundary within M2, not full M2/M3 acceptance.
+Instructions, the 2026-10-12 macOS QA record and remaining manual checks:
+[docs/playtest.md](docs/playtest.md).
+
+| Gate | Status | Evidence |
+|------|--------|----------|
+| Story paths, content, combat balance and economy pass | [x] | `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked`: 90 passed, 2 optional tests ignored; QA export passed separately |
+| Save/load preserves queued story actions and unclaimed battle results; loaded defeat can retry | [x] | `save::tests::roundtrip_keeps_pending_story_actions_and_accepts_older_saves`, `flow::tests::*`, `battle::tests::*`, `dialogue::tests::confirming_the_last_line_stops_saving_the_finished_dialogue` |
+| Simple PR format and lint checks on Linux | [~] | `.github/workflows/checks.yml`: `cargo fmt --check`, Clippy with no warnings; hosted check pending. Tests and builds run locally |
+| Manual playtest instructions and checkpoint mapping | [x] | `docs/playtest.md`, existing `export_qa_saves` |
+| macOS gameplay smoke check, both major battles completed, chapter-end autosave | [x] | 2026-10-12 record in `docs/playtest.md`; `chapter_1_saves_completion_before_showing_the_end_card` |
 
 ## Milestone 1 — Playable foundation ✅
 
@@ -53,14 +71,15 @@ is no audio, there are no portraits, and the tileset is the original Grumon plac
 | Quests with journal and tracker | [x] | `story::tests::quest_completes_and_chains`, HUD screenshot |
 | Boss: Lang Nha | [x] | `showcase_2_lang_nha_two_approaches` |
 | Every story branch reaches the end of the chapter | [x] | Two scripted paths plus side-quest failure tests. Not exhaustive over all choice combinations |
-| Raid formation battle and Lang Nha battle checked in the running game | [~] | Loaded from QA saves (`story_tests::export_qa_saves`): opening turns played, shield, guard, Tụ khí stages 1–2 and a stage-2 *Phá Thạch Quyền* release work. Neither fight was played to the end by hand |
+| Raid formation battle and Lang Nha battle checked in the running game | [x] | 2026-10-12 macOS QA from `export_qa_saves`: both won. Raid: Huyền Quy Thuẫn + Thủ thế to formation stage 3. Lang Nha: wolf first, Phóng Linh, charge stages 1–2 and Phá Thạch Quyền. F5/F9 on both victory screens, then continue into story; boss gives +88 tu vi exactly once |
 | Battle ends and returns to the map, autosave written | [x] | In-game: boar battle won from a QA save, back on the Forest map, `auto.json` has `ch1.da_tru_defeated` |
-| Chapter end (dawn, farewell) checked by hand | [ ] | Covered by `story_tests` only |
-| Save/load in-game during dialogue and combat | [x] | F5 inside a dialogue and inside the raid battle; F9 and the title load screen resume the exact node / battle state |
+| Chapter end (dawn, farewell) checked by hand | [x] | In-game from a QA save: grave, token, medicine jar, thím Ba, Lý Đức's farewell, "Hết Chương 1" card, autosave with all five main quests Done. 2026-10-12: farewell and end card rechecked; completion plus all five main quests are saved before the end card opens (`chapter_1_saves_completion_before_showing_the_end_card`). The earlier check found the raid-entry objective could stall the quest chain if its trigger was skipped; fixed and now asserted by both playthrough tests |
+| Save/load in-game during dialogue and combat | [x] | F5 inside a dialogue and inside the raid battle; F9 and the title load screen resume the exact node / battle state. Rechecked 2026-10-12: battle JSON identical after F5 → command → F9 → F5; pending story actions also retained |
 | Save/load across a chapter transition | [ ] | There is only one chapter so far |
-| Audio (music + SFX) | [ ] | No audio exists. See asset-manifest.md §4 |
-| Visual presentation: portraits, xianxia tileset, battle VFX | [ ] | Generated placeholder art only |
-| Item use outside battle (pause menu) | [ ] | Items can only be used in battle |
+| Audio (music + SFX) | [~] | 8 generated loops and 17 sound effects (`tools/gen_audio.py`), data-driven music per map/time/battle/story, volume settings. Verified in game through logs with a null audio device (`audio::tests`, music log); **not yet listened to by a human** |
+| Dialogue portraits | [x] | 20 generated portraits (`tools/gen_portraits.py`), shown left of the dialogue text; `content::tests::every_speaker_has_a_portrait`. One expression each |
+| Visual presentation: xianxia tileset, burned village at dawn, battle VFX | [ ] | Generated placeholder art; the village looks untouched after the raid (only a screen tint) |
+| Item use outside battle (pause menu) | [x] | `party::tests::*`, playthrough uses the Tụ Khí Đan from ông Mạc's jar; in-game: pill used from Túi đồ, tu vi 0 → 40. Healing items stay battle-only because every battle starts at full Khí huyết (game-systems §8.6) |
 
 Acceptance: a new player finishes Ch1 without help, every in-game save/load case passes, and
 audio and portraits are present.
@@ -71,15 +90,18 @@ audio and portraits are present.
 |------|--------|-------|
 | Tụ khí stages 1–3 + Quá Tụ, breaking, Hộ tâm/Thủ thế protection | [x] | `charge_*`, `interrupter_breaks_charge_unless_warded`, `overcharge_costs_hp_and_backlashes` |
 | Channelled techniques, interrupts, push/pull with cap, stun immunity, no triple turns | [x] | core tests |
-| Formations: energy, phases, aura/pulse, node breaking, release | [x] engine / [~] content | 4 of 6 formations in data (`luong_nghi_tran`, `cuu_cung_me_tran` missing) |
-| Active artifacts with passives and limits | [x] engine / [x] content | 12 in data; the 13th (`chieu_hon_phien`) needs summons ⏳ |
-| Charge techniques | [~] | 3 of 8 (`pha_thach_quyen`, `nghich_menh_chi`, `kiem_phoi_tram`) |
-| Enemy archetypes that react to the systems | [~] | 4 of 6+ in data (assassin, channeller, interrupter, formation breaker) |
+| Formations: energy, phases, aura/pulse, node breaking, release | [x] | 6 of 6 in data; `FreeSwap` aura and `StatusRow` pulse for Lưỡng Nghi / Cửu Cung (`free_swap_aura_and_row_release`) |
+| Active artifacts with passives and limits | [x] | 13 in data; Chiêu Hồn Phiên summons a taunting spirit (`summon_taunts_then_fades_and_never_decides_the_battle`, `ch2_spirit_draws_the_blows`) |
+| Charge techniques | [x] (content) | 8 in data: 3 for the hero, 5 for the Ch2+ companions (defined in data, not yet joinable in story) |
+| Enemy archetypes that react to the systems | [x] 6 / [ ] 7th | Assassin, channeller, interrupter, formation breaker (Ch1) + guardian and drainer (Ch2 data, simulated). The illusionist comes with Ch4 |
+| Chapter 2 battle content | [~] | `ch2.data.ron`: Mộc Nhân, guardian, drainer, Âu Dương Liệt, assassin and six encounters, simulated in `ch2_battles_reward_the_new_lessons`; not placed on maps yet |
 | Three showcase battles, each with two viable approaches, and tests | [x] | `battle::balance_tests::showcase_*` |
-| Breakthrough events (major realms) | [~] | `SetRealm` effect and Ch1 awakening work; no breakthrough scene beyond Luyện Khí yet |
-| Party management UI (order, slots, formation choice) | [ ] | The party tab is view-only |
-| Equipment UI (artifact slots by realm) | [ ] | Equipping is done only through story effects |
-| Alchemy (Luyện đan), artifact refinement (Luyện khí), shops | [ ] | Designed in game-systems.md §10 |
+| Breakthrough events (major realms) | [~] | Mechanic done (`Breakthrough` item effect, `party::tests::breakthrough_needs_the_peak`); no breakthrough item or scene exists in content until Ch3 |
+| Party management UI (order, slots, formation choice) | [x] | `party::tests::*`; in-game: row change refused for the last front-row fighter, formation chosen from learned ones. Order swapping is tested in code only (Ch1 has a party of one) |
+| Equipment UI (artifact slots by realm) | [x] | `party::tests::equipping_respects_slots_and_binding`; in-game: gourd unequipped to the bag and re-equipped |
+| Shops | [x] | `economy::tests::buying_respects_money_and_stock`, `selling_pays_half_and_refuses_quest_items`; in-game: bought a cake and sold a fang at thím Ba's stall |
+| Alchemy (Luyện đan) | [x] | `brewing_is_deterministic_and_improves_with_practice`, full playthrough brews at ông Mạc's stove; in-game: brewed Thuốc Trị Thương |
+| Artifact refinement (Luyện khí) | [x] rules / [~] content | `refining_steps_in_order_until_the_last`, `refinement_levels_reach_the_battle`; in-game screen via debug F3. No Ch1 station: it opens with the sect in Ch2 |
 | Balanced progression across chapters | [ ] | Only Ch1 is balanced |
 
 ## Milestone 4 — Chapters 2–4 ⏳
@@ -102,7 +124,7 @@ audio and portraits are present.
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Content validation in CI | [~] | Runs in `cargo test`; no CI workflow yet |
+| Content validation in CI | [~] | Runs in local `cargo test`; CI intentionally checks only format and Clippy |
 | Quest dependency checks (every quest is startable and completable) | [~] | Ch1 only, via scripted playthroughs |
 | Save migrations | [~] | Framework and a v0 → v1 test exist |
 | Accessibility: text speed, fast battle, font scaling, colour-blind-safe cues | [~] | Fast battle setting only |
@@ -115,14 +137,14 @@ audio and portraits are present.
 
 - M2's audio and portraits block the "presentation" acceptance, not gameplay.
 - Party and equipment UI (M3) must land before Ch2, where a second permanent companion joins.
-- Remaining formations, charge techniques and archetypes (M3) are needed by the Ch2–Ch3 encounters.
+- Ch2 encounters exist in data and simulation; they need maps, a Ch2 battle background set, and a re-balance against Ch2's real progression.
 - An xianxia tileset is needed before building new Ch2 maps, to avoid rebuilding them.
 
 ## Risks
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| No artist or composer: generated placeholder art, no audio | High: presentation quality | asset-manifest.md lists every gap; `tools/gen_art.py` keeps placeholders reproducible |
+| No artist or composer: generated placeholder art and audio | High: presentation quality | asset-manifest.md lists every gap; `tools/gen_art.py` keeps placeholders reproducible |
 | Repo tileset and character sheets have no licence file | Release blocker | Confirm the rights with the repo owner or replace them (asset-manifest.md) |
 | Scope: 8 chapters of handcrafted content | High | Polish one chapter at a time (prompt §16); data-driven content and validators keep the cost per chapter down |
 | Battle balance drifts as content grows | Medium | Policy simulations in `cargo test`; add per-chapter showcase tests |

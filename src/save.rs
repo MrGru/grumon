@@ -17,7 +17,7 @@ use crate::{
     battle::{BattleSession, core::BattleState},
     content::defs::Realm,
     dialogue::DialogueSession,
-    flow::{Notices, PendingStart},
+    flow::{ActionQueue, Notices, PendingStart, QueuedAction},
     story::{Notice, Progress},
 };
 
@@ -75,6 +75,8 @@ pub struct SaveFile {
     pub dialogue: Option<DialogueSnapshot>,
     #[serde(default)]
     pub battle: Option<Box<BattleState>>,
+    #[serde(default)]
+    pub pending_actions: std::collections::VecDeque<QueuedAction>,
 }
 
 impl SaveFile {
@@ -102,6 +104,7 @@ impl SaveFile {
             progress: progress.clone(),
             dialogue,
             battle: battle.map(Box::new),
+            pending_actions: Default::default(),
         }
     }
 }
@@ -257,12 +260,10 @@ impl Plugin for SavePlugin {
         app.add_message::<SaveRequest>()
             .add_message::<LoadRequest>()
             .add_systems(
-                Update,
-                (
-                    handle_saves.run_if(in_state(GameState::Playing)),
-                    handle_loads,
-                ),
-            );
+                PostUpdate,
+                handle_saves.run_if(in_state(GameState::Playing)),
+            )
+            .add_systems(Update, handle_loads);
     }
 }
 
@@ -271,17 +272,19 @@ fn handle_saves(
     progress: Option<Res<Progress>>,
     dialogue: Option<Res<DialogueSession>>,
     battle: Option<Res<BattleSession>>,
+    queue: Res<ActionQueue>,
     mut notices: ResMut<Notices>,
 ) {
     for SaveRequest(slot) in requests.read() {
         let Some(progress) = &progress else {
             continue;
         };
-        let save = SaveFile::new(
+        let mut save = SaveFile::new(
             progress,
             dialogue.as_ref().and_then(|d| d.snapshot()),
             battle.as_ref().and_then(|b| b.snapshot()),
         );
+        save.pending_actions = queue.0.clone();
         let key = match write_save(&save_dir(), *slot, &save) {
             Ok(()) => match slot {
                 SaveSlot::Auto => "notice.autosaved",
@@ -361,6 +364,32 @@ mod tests {
         assert_eq!(loaded, save);
         assert_eq!(loaded.summary.player_name, "Nguyễn Thị Hường");
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn roundtrip_keeps_pending_story_actions_and_accepts_older_saves() {
+        use crate::story::Deferred;
+
+        let mut save = sample();
+        save.pending_actions = [
+            QueuedAction::Deferred(Deferred::Dialogue("ch1_ong_mac_morning".into())),
+            QueuedAction::Deferred(Deferred::Warp {
+                level: "Forest".into(),
+                x: 100,
+                y: 200,
+            }),
+            QueuedAction::Deferred(Deferred::Autosave),
+        ]
+        .into();
+        let mut value = serde_json::to_value(&save).expect("serialize");
+        assert_eq!(parse(&value.to_string()).expect("parse"), save);
+        value
+            .as_object_mut()
+            .expect("object")
+            .remove("pending_actions");
+        let older = parse(&value.to_string()).expect("older v1 save");
+        assert!(older.pending_actions.is_empty());
+        assert_eq!(older.progress, save.progress);
     }
 
     #[test]

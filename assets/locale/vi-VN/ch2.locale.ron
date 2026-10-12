@@ -1,0 +1,51 @@
+// Chương 2 — Ngoại Môn Phong Vân: kẻ địch và trận đấu (bản gốc tiếng Việt).
+{
+    // ---------------------------------------------------------------- Kẻ địch
+    "enemy.moc_nhan.name": "Mộc Nhân",
+    "enemy.de_tu_ho_ve.name": "Đệ tử hộ vệ",
+    "enemy.de_tu_hut_linh.name": "Đệ tử hút linh",
+    "enemy.au_duong_liet_dich.name": "Âu Dương Liệt",
+    "enemy.thich_khach_ao_den.name": "Thích khách áo đen",
+
+    // ---------------------------------------------------------------- Chiêu thức của địch
+    "skill.moc_nhan_go.name": "Gõ Gậy",
+    "skill.moc_nhan_go.desc": "Cánh tay gỗ nện thẳng xuống.",
+    "skill.moc_nhan_chan.name": "Chặn Khí",
+    "skill.moc_nhan_chan.desc": "Hình nhân xoay về phía kẻ đang Tụ khí và đánh cắt ngang.",
+    "skill.ho_ve_khien.name": "Kim Thuẫn Hộ Thân",
+    "skill.ho_ve_khien.desc": "Dựng tấm khiên linh lực che cho đồng môn yếu nhất.",
+    "skill.ho_ve_thach_thuc.name": "Thách Thức",
+    "skill.ho_ve_thach_thuc.desc": "Gõ khiên quát lớn, buộc đối thủ phải đánh vào mình, đồng thời thủ thế.",
+    "skill.ho_ve_dap_khien.name": "Đập Khiên",
+    "skill.ho_ve_dap_khien.desc": "Dùng mép khiên đập mạnh.",
+    "skill.hut_linh_chuong.name": "Hút Linh Chưởng",
+    "skill.hut_linh_chuong.desc": "Chưởng lạnh buốt, rút đi một phần linh lực.",
+    "skill.hut_linh_toa.name": "Tỏa Linh",
+    "skill.hut_linh_toa.desc": "Xích khí quấn lấy kẻ đang Tụ khí, hút cạn linh lực và làm chậm.",
+    "skill.liet_quyen.name": "Liệt Quyền",
+    "skill.liet_quyen.desc": "Nắm đấm bốc lửa.",
+    "skill.liet_xich_viem.name": "Xích Viêm Bạo",
+    "skill.liet_xich_viem.desc": "Gom lửa của Xích Viêm Châu rồi phóng ra, gây Bỏng. Cần thời gian niệm.",
+    "skill.liet_qua_nhiet.name": "Cuồng Hỏa",
+    "skill.liet_qua_nhiet.desc": "Ép Xích Viêm Châu cháy quá mức: tăng Công nhưng tự chuốc Quá nhiệt.",
+    "skill.ao_den_phi_dao.name": "Phi Đao Tẩm Độc",
+    "skill.ao_den_phi_dao.desc": "Lưỡi đao mỏng tẩm độc, nhắm vào kẻ yếu nhất.",
+    "skill.ao_den_am_sat.name": "Ám Sát",
+    "skill.ao_den_am_sat.desc": "Lướt tới đâm liền hai nhát.",
+    "skill.ao_den_doc_khoi.name": "Độc Vụ",
+    "skill.ao_den_doc_khoi.desc": "Ném túi khói độc, có thể làm trúng độc cả đội.",
+
+    // ---------------------------------------------------------------- Trận đấu
+    "encounter.ch2_moc_nhan_tran.objective": "Phá Mộc Nhân Trận",
+    "encounter.ch2_tieu_ty_1.objective": "Thắng vòng một lôi đài",
+    "encounter.ch2_tieu_ty_2.objective": "Thắng vòng hai lôi đài",
+    "encounter.ch2_tieu_ty_3.objective": "Đánh bại Âu Dương Liệt",
+    "encounter.ch2_ho_ve_hut_linh.objective": "Đánh bại hai đệ tử",
+    "encounter.ch2_thich_khach.objective": "Hạ gục thích khách áo đen",
+
+    "hint.ch2_moc_nhan_tran.1": "Mộc Nhân đánh ngay vào ai đang Tụ khí. Tụ khí rồi Thủ thế: bị đánh trúng chỉ mất một bậc thay vì mất hết.",
+    "hint.ch2_tieu_ty_1.1": "Đệ tử hộ vệ dựng khiên và khiêu khích. Đòn nhiều nhát xé khiên tốt hơn một đòn nặng.",
+    "hint.ch2_tieu_ty_2.1": "Kẻ hút linh rút linh lực của người đang Tụ khí. Giữ đủ linh lực trước khi tung chiêu.",
+    "hint.ch2_tieu_ty_3.1": "Xích Viêm Bạo cần thời gian niệm — xem thứ tự hành động để ngắt hoặc đẩy lượt hắn.",
+    "hint.ch2_thich_khach.1": "Thích khách rất nhanh và nhắm vào người yếu nhất. Đưa người khỏe lên hàng Tiền, hoặc gọi Oán Hồn Vệ hút đòn.",
+}
