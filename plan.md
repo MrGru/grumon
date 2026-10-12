@@ -34,7 +34,7 @@ Instructions, the 2026-10-12 macOS QA record and remaining manual checks:
 |------|--------|----------|
 | Story paths, content, combat balance and economy pass | [x] | `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked`: 90 passed, 2 optional tests ignored; QA export passed separately |
 | Save/load preserves queued story actions and unclaimed battle results; loaded defeat can retry | [x] | `save::tests::roundtrip_keeps_pending_story_actions_and_accepts_older_saves`, `flow::tests::*`, `battle::tests::*`, `dialogue::tests::confirming_the_last_line_stops_saving_the_finished_dialogue` |
-| Linux/macOS PR checks and downloadable debug builds with QA saves | [~] | `.github/workflows/playtest.yml`; hosted run in progress |
+| Simple PR format and lint checks on Linux | [~] | `.github/workflows/checks.yml`: `cargo fmt --check`, Clippy with no warnings; hosted check pending. Tests and builds run locally |
 | Manual playtest instructions and checkpoint mapping | [x] | `docs/playtest.md`, existing `export_qa_saves` |
 | macOS gameplay smoke check, both major battles completed, chapter-end autosave | [x] | 2026-10-12 record in `docs/playtest.md`; `chapter_1_saves_completion_before_showing_the_end_card` |
 
@@ -124,7 +124,7 @@ audio and portraits are present.
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Content validation in CI | [~] | Runs in `cargo test`; PR workflow added for Linux/macOS, hosted run in progress |
+| Content validation in CI | [~] | Runs in local `cargo test`; CI intentionally checks only format and Clippy |
 | Quest dependency checks (every quest is startable and completable) | [~] | Ch1 only, via scripted playthroughs |
 | Save migrations | [~] | Framework and a v0 → v1 test exist |
 | Accessibility: text speed, fast battle, font scaling, colour-blind-safe cues | [~] | Fast battle setting only |

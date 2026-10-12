@@ -15,9 +15,9 @@ in the docs but not built yet. For what is done, what is missing and the risks, 
 [plan.md](plan.md). It uses generated placeholder art and music
 ([docs/asset-manifest.md](docs/asset-manifest.md)).
 
-For the Chapter 1 PR demo, QA saves, downloadable CI builds and the manual checklist, see
-[docs/playtest.md](docs/playtest.md). The `Chapter 1 playtest` workflow checks Linux and macOS,
-then packages a debug build with assets and QA checkpoints.
+For the Chapter 1 PR demo, QA saves and the manual checklist, see
+[docs/playtest.md](docs/playtest.md). The `Rust checks` workflow runs format and Clippy checks
+on Linux. Tests, running the game and packaging are local tasks.
 
 ## Features
 

@@ -21,21 +21,6 @@ THIEN_MENH_SAVE_DIR="$PWD/target/qa-saves" cargo run --locked
 
 Regenerating QA saves resets these checkpoints. Do not point either variable at your real saves.
 
-## Run a PR artifact
-
-Open the PR's **Chapter 1 playtest** Actions run. Once it succeeds, download the artifact matching
-Linux x86-64 or macOS Apple Silicon. Unzip the artifact, extract the `.tar.gz`, and open a terminal
-in the extracted directory, where `grumon` and `assets/` sit together:
-
-```bash
-THIEN_MENH_SAVE_DIR="$PWD/qa-saves" ./grumon
-```
-
-The tar archive preserves the executable bit. These are debug builds for testing, not installers
-or signed releases. Linux needs a graphical desktop, a compatible GPU and the runtime libraries
-listed in README. macOS may ask you to allow the unsigned binary in Privacy & Security.
-The workflow runs logic tests and builds the game; interactive and audio checks remain manual.
-
 ## QA checkpoints
 
 Choose **Tải hành trình** on the title screen and then the slot:
@@ -92,4 +77,5 @@ On the built game with a separate copy of `export_qa_saves`:
 
 The complete suite passes 90 tests, with two optional tests ignored; QA save export passes
 separately. The human listening pass, replacement art, gamepad hardware and full unassisted
-start-to-finish playthrough remain outstanding. Linux is checked by CI, not by this interactive run.
+start-to-finish playthrough remain outstanding. CI checks format and Clippy on Linux; it does not
+run tests, launch the game or package builds. Linux gameplay remains unverified.
